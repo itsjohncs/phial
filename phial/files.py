@@ -15,6 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# external
+import yaml
+
 _FRONT_MATTER_MARKER = u"---"
 """The string that denotes the beginning and end of YAML front matter."""
 
@@ -37,34 +40,31 @@ class File:
         with open(self.path) as f:
             # Check to see if there is YAML front matter
             first_line = unicode(f.readline()).rstrip()
-            if first_line == _FRONT_MATTER_MARKER:
-                # Iterate through every line until we hit the end of the front
-                # matter.
-                import StringIO
-                front_matter = StringIO.StringIO()
-                for line in f:
-                    uline = unicode(line)
-                    if uline.rstrip() == _FRONT_MATTER_MARKER:
-                        break
-                    else:
-                        front_matter.write(uline)
+            if first_line != _FRONT_MATTER_MARKER:
+                return None
+
+            # Iterate through every line until we hit the end of the front
+            # matter.
+            import StringIO
+            front_matter = StringIO.StringIO()
+            for line in f:
+                uline = unicode(line)
+                if uline.rstrip() == _FRONT_MATTER_MARKER:
+                    break
                 else:
-                    # This occurs if we didn't break above, so we know that
-                    # there was no end to the front matter. This is illegal.
-                    raise exceptions.BadFrontMatter(
-                        path = self.path,
-                        error_string = "No end of front matter."
-                    )
+                    front_matter.write(uline)
+            else:
+                # This occurs if we didn't break above, so we know that
+                # there was no end to the front matter. This is illegal.
+                raise exceptions.BadFrontMatter(
+                    path = self.path,
+                    error_string = "No end of front matter."
+                )
 
-                front_matter.flush()
-                front_matter.seek(0)
+            front_matter.flush()
+            front_matter.seek(0)
 
-
-
-                # TODO: Do something with the front matter(parse it)
-                return front_matter.getvalue()
-
-        return None
+            return yaml.load(front_matter)
 
     def __getitem__(self, attribute):
         return self.attributes[attribute]
