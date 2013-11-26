@@ -26,8 +26,8 @@ class File:
     A Phial file.
     """
 
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, file_handle):
+        self.file_handle = file_handle
 
     def _parse_frontmatter(self):
         """
@@ -37,34 +37,35 @@ class File:
 
         """
 
-        with open(self.path) as f:
-            # Check to see if there is YAML front matter
-            first_line = unicode(f.readline()).rstrip()
-            if first_line != _FRONT_MATTER_MARKER:
-                return None
+        # Check to see if there is YAML front matter
+        first_line = unicode(self.file_handle.readline()).rstrip()
+        if first_line != _FRONT_MATTER_MARKER:
+            return None
 
-            # Iterate through every line until we hit the end of the front
-            # matter.
-            import StringIO
-            front_matter = StringIO.StringIO()
-            for line in f:
-                uline = unicode(line)
-                if uline.rstrip() == _FRONT_MATTER_MARKER:
-                    break
-                else:
-                    front_matter.write(uline)
+        # Iterate through every line until we hit the end of the front
+        # matter.
+        import StringIO
+        front_matter = StringIO.StringIO()
+        for line in self.file_handle:
+            uline = unicode(line)
+            if uline.rstrip() == _FRONT_MATTER_MARKER:
+                break
             else:
-                # This occurs if we didn't break above, so we know that
-                # there was no end to the front matter. This is illegal.
-                raise exceptions.BadFrontMatter(
-                    path = self.path,
-                    error_string = "No end of front matter."
-                )
+                front_matter.write(uline)
+        else:
+            # This occurs if we didn't break above, so we know that
+            # there was no end to the front matter. This is illegal.
+            raise exceptions.BadFrontMatter(
+                path = self.file_handle.name,
+                error_string = "No end of front matter."
+            )
 
-            front_matter.flush()
-            front_matter.seek(0)
+        # Make sure everything we've done is reflected in the string then
+        # move to the beginning of the "file".
+        front_matter.flush()
+        front_matter.seek(0)
 
-            return yaml.load(front_matter)
+        return yaml.load(front_matter)
 
     def __getitem__(self, attribute):
         return self.attributes[attribute]
