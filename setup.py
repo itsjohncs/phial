@@ -40,14 +40,17 @@ setup(
     keywords = "python packaging",
     url = "https://www.github.com/brownhead/phial",
     long_description = read("README.rst"),
+    install_requires = [
+        "PyYAML==3.10"
+    ],
     classifiers = [
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License"
     ],
+    # This ensures that the MANIFEST.IN file is used for both binary and source
+    # distributions.
+    include_package_data = True,
     packages = find_packages(),
-    zip_safe = True,
-    data_files = [
-        (".", ["LICENSE", "README.rst", "VERSION"])
-    ]
+    zip_safe = True
 )
