@@ -24,10 +24,10 @@ import pytest
 # stdlib
 import StringIO
 
-# A list of sample pages we will use to test our page parser.
-SAMPLE_PAGES = [
+# A list of sample pages we will use to test our sample parser.
+SAMPLE_FILES = [
     {
-        # The raw text of the page. This is using the automatic string
+        # The raw text of the file. This is using the automatic string
         # concatenation feature of Python. More info at
         # http://stackoverflow.com/a/10660443/1989056.
         "raw": (
@@ -42,7 +42,7 @@ SAMPLE_PAGES = [
         # The frontmatter the parser should pull out
         "frontmatter": {"key1": "value1", "key2": "value2"},
 
-        # The body of the page (everything but the frontmatter)
+        # The body of the file (everything but the frontmatter)
         "body": "\nDestruction."
     },
     {
@@ -53,9 +53,9 @@ SAMPLE_PAGES = [
 
 ]
 
-class TestPages:
-    @pytest.mark.parametrize("page", SAMPLE_PAGES)
-    def test_frontmatter_parsing(self, page):
+class TestFiles:
+    @pytest.mark.parametrize("sample", SAMPLE_FILES)
+    def test_frontmatter_parsing(self, sample):
         """
         Ensure that frontmatter is parsed correctly.
 
@@ -63,7 +63,7 @@ class TestPages:
 
         # Use a StringIO object to fake out the File class into thinking it's
         # working with a real file.
-        fake_file = StringIO.StringIO(page["raw"])
+        fake_file = StringIO.StringIO(sample["raw"])
 
         f = phial.files.File(fake_file)
-        assert f._parse_frontmatter() == page["frontmatter"]
+        assert f._parse_frontmatter() == sample["frontmatter"]
