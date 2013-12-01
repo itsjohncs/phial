@@ -15,7 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import namedtuple
+# internal
+import exceptions
+
+# set up logging
+import logging
+log = logging.getLogger("phial.pages")
+
+_pages = []
+"""
+A list of all of the pages registered in the application.
+
+.. note::
+
+    This should not be accessed directly, use get_pages() instead.
+
+"""
 
 def register_page(func, *args, **kwargs):
     _pages.append(_Page(func, *args, **kwargs))
@@ -35,11 +50,21 @@ def page(*dec_args, **dec_kwargs):
 
     return real_decorator
 
-class _Page:
-    def __init__(self, func, url = None, files = None):
+def get_pages():
+    """Returns a list of all of the pages regstered in the application."""
+
+    return _pages
+
+class RenderedPage:
+    def __init__(self, contents, path = None):
+        self.contents = contents
+        self.path = path
+
+class Page:
+    def __init__(self, func, path = None, files = None):
         """
         :param func: The function that will be called to generate the page.
-        :param url: The desired relative URL of the page. If `None`, a URL must
+        :param path: The desired relative path of the page. If `None`, a path must
                 be specified in `func`'s return value.
         :param files: May be `None`, a string, or a list of strings.  If a
                 string, that string will be globbed and `func` will be called
@@ -47,16 +72,39 @@ class _Page:
                 string in the list will be globbed and then `func` will be
                 called for each unique matching file. If `None`, `func` will be
                 called only once.
+
         """
 
         self.func = func
-        self.url = url
+        self.path = path
         self.files = files
 
-    def glob_files(self):
-        import glob
-        files = glob.glob(page.files)
+    def render_page(self, from_file = None):
+        """
+        Calls ``func`` appropriately and returns a RenderedPage object.
 
-        log.debug("Globbed %s and got %s", repr(page.files), repr(files))
+        """
 
-_pages = []
+        if from_file is None:
+            result = self.func()
+        else:
+            result = self.func(from_file)
+
+        if result is None:
+            log.info("Page function %s returned None, ignoring.",
+                repr(self))
+            return None
+
+        if isinstance(result, basestring):
+            if self.path is None:
+                log.error(
+                    "Page function for %s returned only contents and path not "
+                    "set.", repr(self)
+                )
+                raise RuntimeError("Path not set.")
+
+            result = RenderedPage(contents = result, path = self.path)
+
+        return result
+
+

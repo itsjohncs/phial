@@ -26,3 +26,16 @@ class BadFrontMatterError(RuntimeError):
 
 	def __str__(self):
 		return self.get_string()
+
+class BadPageFunction(RuntimeError):
+    def __self__(self, message, page):
+        self.message = message
+        self.page = page
+
+        RuntimeError.__init__(self, message)
+
+    def get_string(self):
+        return str(self)
+
+    def __str__(self):
+        return self.get_string()

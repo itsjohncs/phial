@@ -15,33 +15,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# internal
 import exceptions
+import pages
 
+# stdlib
+import glob
+
+# set up logging
 import logging
-log = logging.getLogger("phial.renderer")
+log = logging.getLogger("phial.processor")
 
 def process():
-    import pages
-
-    log.debug("Process called. _pages = %s", repr(pages._pages))
-
     # Go through every page we know about and process each one.
-    for page in pages._pages:
-        process_page(page)
-
+    for i in pages.get_pages():
+        process_page(i)
 
 def process_page(page):
-    log.debug("Processing %s", repr(page))
+    log.info("Processing %s", repr(page))
 
     # Check if this page is generated based on some files.
-    if "files" in page.kwargs:
+    if page.files is None:
+        render_page(page)
+    else:
         for f in glob_files(page.kwargs["files"]]):
             render_page(page, from_file = f)
+
+def glob_files(files):
+    """
+    Returns a list of files matching the pattern(s) in ``files``.
+
+    :param files: May be either a string or a list of strings. If a string, the
+        pattern will be globbed and all matching files will be returned. If a
+        list of strings, all of the patterns will be globbed and all unique
+        file paths will be returned.
+
+    :returns: A list of file paths.
+
+    """
+
+    if isinstance(files, basestring):
+        result = glob.glob(files)
     else:
-        render_page(page)
+        # Glob every pattern and grab the unique results
+        result_set = set()
+        for i in files:
+            result_set.update(glob.glob(i))
+        result = list(result_set)
 
-def glob_files(page):
-    import glob
-    files = glob.glob(page.files)
-
-    log.debug("Globbed %s and got %s", repr(page.files), repr(files))
+    return files
