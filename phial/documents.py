@@ -15,15 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# stdlib
+import StringIO
+
 # external
 import yaml
 
 _FRONT_MATTER_MARKER = u"---"
 """The string that denotes the beginning and end of YAML front matter."""
 
-class File:
+class Document:
     """
-    A Phial file.
+    A Phial document.
+
     """
 
     def __init__(self, file_handle):
@@ -31,9 +35,9 @@ class File:
 
     def _parse_frontmatter(self):
         """
-        Will consume and parse any front matter present in the file. Returns a
-        dictionary of template fields that were specified in the front matter
-        or `None` if no front matter is present.
+        Will consume and parse any front matter present in the document.
+        Returns a dictionary of template fields that were specified in the
+        front matter or `None` if no front matter is present.
 
         """
 
@@ -44,7 +48,6 @@ class File:
 
         # Iterate through every line until we hit the end of the front
         # matter.
-        import StringIO
         front_matter = StringIO.StringIO()
         for line in self.file_handle:
             uline = unicode(line)
