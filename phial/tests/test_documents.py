@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # test helpers
-import phial.files
+from .. import documents
 
 # external
 import pytest
@@ -34,36 +34,33 @@ SAMPLE_FILES = [
             "---\n"
             "key1: value1\n"
             "key2: value2\n"
-            "---\n"
+            "...\n"
             "\n"
             "Destruction."
         ),
 
-        # The frontmatter the parser should pull out
+        # The frontmatter the parser *should* pull out from the document above
         "frontmatter": {"key1": "value1", "key2": "value2"},
 
-        # The body of the file (everything but the frontmatter)
+        # The body of the file the parser *should* pull out (the body is
+        # everything but the frontmatter)
         "body": "\nDestruction."
     },
     {
         "raw": "Small file.",
         "frontmatter": None,
         "body": "Small file."
-    },
-
+    }
 ]
 
 class TestFiles:
     @pytest.mark.parametrize("sample", SAMPLE_FILES)
     def test_frontmatter_parsing(self, sample):
-        """
-        Ensure that frontmatter is parsed correctly.
-
-        """
+        """Ensure that frontmatter is parsed correctly."""
 
         # Use a StringIO object to fake out the File class into thinking it's
         # working with a real file.
         fake_file = StringIO.StringIO(sample["raw"])
 
-        f = phial.files.File(fake_file)
-        assert f._parse_frontmatter() == sample["frontmatter"]
+        f = documents.Document(fake_file)
+        assert f.frontmatter == sample["frontmatter"]

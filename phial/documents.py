@@ -21,8 +21,47 @@ import StringIO
 # external
 import yaml
 
-_FRONT_MATTER_MARKER = u"---"
-"""The string that denotes the beginning and end of YAML front matter."""
+# internal
+from . import exceptions
+
+_FRONT_MATTER_START = u"---"
+"""The string that denotes the beginning of YAML frontmatter."""
+
+_FRONT_MATTER_END = u"..."
+"""The string that denotes the end of YAML frontmatter."""
+
+def _consume_frontmatter(the_file):
+    """
+    Will consume and parse any frontmatter present in the file.
+
+    :returns: A dictionary of template fields that were specified in the
+        frontmatter or ``None`` if no frontmatter is present.
+
+    """
+
+    # Check to see if there is YAML frontmatter
+    first_line = unicode(the_file.readline()).rstrip()
+    if first_line != _FRONT_MATTER_START:
+        return None
+
+    # Iterate through every line until we hit the end of the front
+    # matter.
+    front_matter = StringIO.StringIO()
+    for line in the_file:
+        uline = unicode(line)
+        if uline.rstrip() == _FRONT_MATTER_END:
+            break
+        else:
+            front_matter.write(uline)
+    else:
+        # This occurs if we didn't break above, so we know that
+        # there was no end to the frontmatter. This is illegal.
+        raise exceptions.BadFrontmatter(
+            path = getattr(the_file, "name", None),
+            error_string = u"No end of frontmatter."
+        )
+
+    return yaml.load(front_matter)
 
 class Document:
     """
@@ -30,48 +69,7 @@ class Document:
 
     """
 
-    def __init__(self, file_handle):
-        self.file_handle = file_handle
-
-    def _parse_frontmatter(self):
-        """
-        Will consume and parse any front matter present in the document.
-        Returns a dictionary of template fields that were specified in the
-        front matter or `None` if no front matter is present.
-
-        """
-
-        # Check to see if there is YAML front matter
-        first_line = unicode(self.file_handle.readline()).rstrip()
-        if first_line != _FRONT_MATTER_MARKER:
-            return None
-
-        # Iterate through every line until we hit the end of the front
-        # matter.
-        front_matter = StringIO.StringIO()
-        for line in self.file_handle:
-            uline = unicode(line)
-            if uline.rstrip() == _FRONT_MATTER_MARKER:
-                break
-            else:
-                front_matter.write(uline)
-        else:
-            # This occurs if we didn't break above, so we know that
-            # there was no end to the front matter. This is illegal.
-            raise exceptions.BadFrontMatter(
-                path = self.file_handle.name,
-                error_string = "No end of front matter."
-            )
-
-        # Make sure everything we've done is reflected in the string then
-        # move to the beginning of the "file".
-        front_matter.flush()
-        front_matter.seek(0)
-
-        return yaml.load(front_matter)
-
-    def __getitem__(self, attribute):
-        return self.attributes[attribute]
-
-    def __contains__(self, attribute):
-        return attribute in self.attributes
+    def __init__(self, the_file):
+        self.the_file = the_file
+        self.frontmatter = _consume_frontmatter(self.the_file)
+        self.body = self.the_file.read()
