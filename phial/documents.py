@@ -55,7 +55,7 @@ def open_file(path):
 
     """
 
-    DEFAULT_ENCODING = "utf_8"
+    DEFAULT_ENCODING = u"utf_8"
     BOMS = [
         (codecs.BOM_UTF8, u"utf_8_sig"),
         (codecs.BOM_UTF16, u"utf_16"),
