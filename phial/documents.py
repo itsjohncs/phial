@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # stdlib
-import StringIO
+import codecs
 
 # external
 import yaml
@@ -24,30 +24,90 @@ import yaml
 # internal
 from . import exceptions
 
+# We need to get PyYAML to use the Python unicode object to store any strings
+# present in the YAML. Therefore we override the default handling of YAML
+# strings here. The default handling will return a str if every character is
+# a valid ASCII character.
+yaml.SafeLoader.add_constructor(
+    u"tag:yaml.org,2002:str",
+    lambda loader, node: loader.construct_scalar(node)
+)
+
 _FRONT_MATTER_START = u"---"
 """The string that denotes the beginning of YAML frontmatter."""
 
 _FRONT_MATTER_END = u"..."
 """The string that denotes the end of YAML frontmatter."""
 
-def _consume_frontmatter(the_file):
+def open_file(path):
     """
-    Will consume and parse any frontmatter present in the file.
+    Open a file with the correct decoder according to the
+    `YAML 1.1 spec <http://yaml.org/spec/1.1/#id868742>`_, with the notable
+    addition of correct handling of the
+    `UTF-8 with BOM signature <http://en.wikipedia.org/wiki/Byte_order_mark#UTF-8>`_
+    encoding.
+
+    :param path: The location of the file on the operating system. It will be
+        opened for reading only.
+
+    :returns: A file-like object as returned by
+        `codecs.open() <http://docs.python.org/2/library/codecs.html#codecs.open>`_.
+
+    """
+
+    DEFAULT_ENCODING = "utf_8"
+    BOMS = [
+        (codecs.BOM_UTF8, u"utf_8_sig"),
+        (codecs.BOM_UTF16, u"utf_16"),
+        (codecs.BOM_UTF16_BE, u"utf_16_be"),
+        (codecs.BOM_UTF16_LE, u"utf_16_le)
+    ]
+
+    # Grab just enough bytes to determine the encoding
+    with open(path, u"rb") as raw_file:
+        max_bom_length = reduce(max, [i[0] for i in BOMS])
+        front_data = raw_file.read(max_bom_length)
+
+    file_encoding = DEFAULT_ENCODING
+    for bom, encoding in BOMS:
+        if front_data.startswith(bom):
+            file_encoding = encoding
+            break
+
+    return codecs.open(path, u"rb", encoding = file_encoding)
+
+def parse_document(document_file):
+    """
+    Will parse a document into its frontmatter and body components. The
+    frontmatter will be decoded with a YAML parser.
+
+    :param document_file: A file-like object to consume.
 
     :returns: A dictionary of template fields that were specified in the
         frontmatter or ``None`` if no frontmatter is present.
 
     """
 
+    # Toss out any comments and see if there's a YAML document at the top of
+    # the file.
+    for i in document_file:
+        if i.startswith(u"#"):
+            continue
+        elif i.startswith(u"%") or i.startswith(u"---"):
+            break
+
+
+
+
     # Check to see if there is YAML frontmatter
-    first_line = unicode(the_file.readline()).rstrip()
+    first_line = unicode(document_file.readline()).rstrip()
     if first_line != _FRONT_MATTER_START:
         return None
 
     # Iterate through every line until we hit the end of the front
     # matter.
     front_matter = StringIO.StringIO()
-    for line in the_file:
+    for line in document_file:
         uline = unicode(line)
         if uline.rstrip() == _FRONT_MATTER_END:
             break
@@ -57,11 +117,11 @@ def _consume_frontmatter(the_file):
         # This occurs if we didn't break above, so we know that
         # there was no end to the frontmatter. This is illegal.
         raise exceptions.BadFrontmatter(
-            path = getattr(the_file, "name", None),
+            path = getattr(document_file, "name", None),
             error_string = u"No end of frontmatter."
         )
 
-    return yaml.load(front_matter)
+    return yaml.safe_load(front_matter)
 
 class Document:
     """
@@ -69,7 +129,7 @@ class Document:
 
     """
 
-    def __init__(self, the_file):
-        self.the_file = the_file
-        self.frontmatter = _consume_frontmatter(self.the_file)
-        self.body = self.the_file.read()
+    def __init__(self, document_file):
+        self.document_file = document_file
+        self.frontmatter = _consume_frontmatter(self.document_file)
+        self.body = self.document_file.read()
