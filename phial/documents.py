@@ -16,6 +16,7 @@
 # limitations under the License.
 
 # stdlib
+import StringIO
 import codecs
 
 # external
@@ -32,12 +33,6 @@ yaml.SafeLoader.add_constructor(
     u"tag:yaml.org,2002:str",
     lambda loader, node: loader.construct_scalar(node)
 )
-
-_FRONT_MATTER_START = u"---"
-"""The string that denotes the beginning of YAML frontmatter."""
-
-_FRONT_MATTER_END = u"..."
-"""The string that denotes the end of YAML frontmatter."""
 
 def open_file(path):
     """
@@ -81,47 +76,36 @@ def parse_document(document_file):
     Will parse a document into its frontmatter and body components. The
     frontmatter will be decoded with a YAML parser.
 
-    :param document_file: A file-like object to consume.
+    :param document_file: A file-like object to consume. It must produce
+        ``unicode`` objects when read from rather than ``str``.
 
-    :returns: A dictionary of template fields that were specified in the
-        frontmatter or ``None`` if no frontmatter is present.
+    :returns: A two-tuple ``(frontmatter, body)``.
 
     """
 
-    # Toss out any comments and see if there's a YAML document at the top of
-    # the file.
-    for i in document_file:
-        if i.startswith(u"#"):
-            continue
-        elif i.startswith(u"%") or i.startswith(u"---"):
-            break
-
-
-
-
-    # Check to see if there is YAML frontmatter
-    first_line = unicode(document_file.readline()).rstrip()
-    if first_line != _FRONT_MATTER_START:
-        return None
+    FRONT_MATTER_END = u"..."
 
     # Iterate through every line until we hit the end of the front
     # matter.
     front_matter = StringIO.StringIO()
     for line in document_file:
-        uline = unicode(line)
-        if uline.rstrip() == _FRONT_MATTER_END:
+        assert isinstance(line, unicode)
+
+        front_matter.write(line)
+
+        if line.rstrip() == FRONT_MATTER_END:
             break
-        else:
-            front_matter.write(uline)
     else:
         # This occurs if we didn't break above, so we know that
-        # there was no end to the frontmatter. This is illegal.
-        raise exceptions.BadFrontmatter(
-            path = getattr(document_file, "name", None),
-            error_string = u"No end of frontmatter."
-        )
+        # there was no frontmatter after all.
+        return (None, front_matter.get_value())
 
-    return yaml.safe_load(front_matter)
+    decoded_front_matter = yaml.safe_load(front_matter)
+
+    # The rest of the file is the body.
+    body = document_file.read()
+
+    return (decoded_front_matter, body)
 
 class Document:
     """
@@ -129,7 +113,15 @@ class Document:
 
     """
 
-    def __init__(self, document_file):
-        self.document_file = document_file
-        self.frontmatter = _consume_frontmatter(self.document_file)
-        self.body = self.document_file.read()
+    def __init__(self, document):
+        """
+        :param document: May be either a path or a file-like object.
+
+        """
+
+        if isinstance(document, basestring):
+            self.document_file = open_file(document)
+        else:
+            self.document_file = document
+
+        self.frontmatter, self.body = parse_document(self.document_file)

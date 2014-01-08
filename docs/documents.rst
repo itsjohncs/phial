@@ -3,7 +3,7 @@ Documents
 
 A Phial document can be any file. If the document contains YAML frontmatter, Phial will consume and parse it seperately from the rest of the document.
 
-Frontmatter begins with three dashes ``---``, and ends with three periods ``...``. This is slightly different than the popular tool `Jekyll <http://jekyllrb.com/>`_ which uses three dashes to start *and* end the frontmatter, so be wary.
+Frontmatter ends with a line with three periods ``...`` (must be on its own line though trailing spaces are ignored). Everything before is treated as a YAML 1.1 document.
 
 Below is an example of a simple document containing frontmatter.
 
@@ -12,7 +12,6 @@ Below is an example of a simple document containing frontmatter.
     # simple_document.txt
     # Comments at the top are legal! Just make sure they only exist at the top
     # and there's no spaces before the sha (# character).
-    ---
     name: Phial
     author: John Sullivan
     url: https://github.com/brownhead/phial
