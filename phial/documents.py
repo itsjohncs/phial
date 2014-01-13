@@ -111,6 +111,10 @@ class Document:
     """
     A Phial document.
 
+    :ivar frontmatter: A dictionary containing the parsed frontmatter of the
+        document.
+    :ivar body: A unicode string containing the body of the document (which is
+        defined as everything that's not the frontmatter).
     """
 
     def __init__(self, document):
@@ -120,8 +124,8 @@ class Document:
         """
 
         if isinstance(document, basestring):
-            self.document_file = open_file(document)
+            document_file = open_file(document)
         else:
-            self.document_file = document
+            document_file = document
 
-        self.frontmatter, self.body = parse_document(self.document_file)
+        self.frontmatter, self.body = parse_document(document_file)
