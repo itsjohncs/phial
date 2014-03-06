@@ -113,16 +113,17 @@ class Page(object):
 
         return result
 
-class StaticPage(object):
+class StaticPage(Page):
     def __init__(self, source_path, dest_path = None):
         self.source_path = source_path
 
         if dest_path is None:
-            self.dest_path = self.source_path
-        else:
-            self.dest_path = dest_path
+            dest_path = self.source_path
 
-    def render(self):
+        super(StaticPage, self).__init__(func = self._static_func,
+            path = dest_path)
+
+    def _static_func(self):
         return RenderedPage(
             body = documents.open_file(self.source_path).read(),
-            path = self.dest_path)
+            path = self.path)

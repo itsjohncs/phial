@@ -48,10 +48,7 @@ def process(src_dir = "./site", build_dir = "./build"):
     # Go through every page we know about and process each one.
     rendered_pages = []
     for i in pages.get_pages():
-        if isinstance(i, pages.StaticPage):
-            rendered_pages.append(i.render())
-        else:
-            rendered_pages += process_page(i)
+        rendered_pages += process_page(i)
 
     # During the build step, we reset the current directory back to whatever
     # it was to begin with.
