@@ -18,6 +18,7 @@
 # stdlib
 import StringIO
 import codecs
+import os
 
 # external
 import yaml
@@ -55,12 +56,12 @@ def open_file(path):
         (codecs.BOM_UTF8, u"utf_8_sig"),
         (codecs.BOM_UTF16, u"utf_16"),
         (codecs.BOM_UTF16_BE, u"utf_16_be"),
-        (codecs.BOM_UTF16_LE, u"utf_16_le)
+        (codecs.BOM_UTF16_LE, u"utf_16_le")
     ]
 
     # Grab just enough bytes to determine the encoding
     with open(path, u"rb") as raw_file:
-        max_bom_length = reduce(max, [i[0] for i in BOMS])
+        max_bom_length = reduce(max, [len(i[0]) for i in BOMS])
         front_data = raw_file.read(max_bom_length)
 
     file_encoding = DEFAULT_ENCODING
@@ -69,7 +70,7 @@ def open_file(path):
             file_encoding = encoding
             break
 
-    return codecs.open(path, u"rb", encoding = file_encoding)
+    return codecs.open(path, "r", encoding = file_encoding)
 
 def parse_document(document_file):
     """
@@ -98,12 +99,20 @@ def parse_document(document_file):
     else:
         # This occurs if we didn't break above, so we know that
         # there was no frontmatter after all.
-        return (None, front_matter.get_value())
+        document_file.seek(0)
+        return (None, document_file.read())
 
-    decoded_front_matter = yaml.safe_load(front_matter)
+    decoded_front_matter = yaml.safe_load(front_matter.getvalue())
 
-    # The rest of the file is the body.
+    # The rest of the file is the body. Note that we have to do multiple reads
+    # here. Not entirely sure why yet but I suspect an internal buffer used by
+    # the file's next() function.
     body = document_file.read()
+    while True:
+        data = document_file.read()
+        if data == "":
+            break
+        body += data
 
     return (decoded_front_matter, body)
 
@@ -111,21 +120,25 @@ class Document:
     """
     A Phial document.
 
+    :ivar file_path: If applicable, the path to the document on the filesystem,
+        may be ``None``.
     :ivar frontmatter: A dictionary containing the parsed frontmatter of the
         document.
     :ivar body: A unicode string containing the body of the document (which is
         defined as everything that's not the frontmatter).
     """
 
-    def __init__(self, document):
+    def __init__(self, document, file_path = None):
         """
         :param document: May be either a path or a file-like object.
 
         """
 
         if isinstance(document, basestring):
+            self.file_path = os.path.abspath(document)
             document_file = open_file(document)
         else:
+            self.file_path = None
             document_file = document
 
         self.frontmatter, self.body = parse_document(document_file)

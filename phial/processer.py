@@ -18,28 +18,76 @@
 # internal
 import exceptions
 import pages
+import documents
 
 # stdlib
 import glob
+import os
+import errno
 
 # set up logging
 import logging
 log = logging.getLogger("phial.processor")
 
-def process():
+def _mkdirs(dir_path):
+    """Creates a directory and its parents if they don't exist."""
+
+    try:
+        os.makedirs(dir_path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+def process(src_dir = "./site", build_dir = "./build"):
+    # We want all of the relative paths in the user's code to be relative to
+    # the source directory, so we're actually going to modify our current
+    # directory process-wide.
+    old_cwd = os.getcwd()
+    os.chdir(src_dir)
+
     # Go through every page we know about and process each one.
+    rendered_pages = []
     for i in pages.get_pages():
-        process_page(i)
+        if isinstance(i, pages.StaticPage):
+            rendered_pages.append(i.render())
+        else:
+            rendered_pages += process_page(i)
+
+    # During the build step, we reset the current directory back to whatever
+    # it was to begin with.
+    os.chdir(old_cwd)
+
+    # Spill out the rendered pages into the build directory
+    for i in rendered_pages:
+        destination = os.path.join(build_dir, i.path)
+        if not os.path.abspath(destination).startswith(
+                os.path.abspath(build_dir)):
+            raise ValueError("destination path is invalid: {}".format(
+                destination))
+
+        # Make sure the destination's directory exists
+        _mkdirs(os.path.dirname(destination))
+
+        open(destination, "w").write(i.body.encode("utf_8"))
 
 def process_page(page):
+    """
+    Processes a page and returns a list of RenderedPage objects.
+
+    """
+
     log.info("Processing %s", repr(page))
 
     # Check if this page is generated based on some files.
+    rendered_pages = []
     if page.files is None:
-        render_page(page)
+        rendered_pages.append(page.render())
     else:
-        for f in glob_files(page.kwargs["files"]]):
-            render_page(page, from_file = f)
+        for f in glob_files(page.files):
+            document = documents.Document(f)
+            rendered_pages.append(page.render(document))
+
+    return rendered_pages
 
 def glob_files(files):
     """
@@ -63,4 +111,4 @@ def glob_files(files):
             result_set.update(glob.glob(i))
         result = list(result_set)
 
-    return files
+    return result

@@ -17,6 +17,7 @@
 
 # internal
 import exceptions
+import documents
 
 # set up logging
 import logging
@@ -33,7 +34,10 @@ A list of all of the pages registered in the application.
 """
 
 def register_page(func, *args, **kwargs):
-    _pages.append(_Page(func, *args, **kwargs))
+    _pages.append(Page(func, *args, **kwargs))
+
+def register_static_page(*args, **kwargs):
+    _pages.append(StaticPage(*args, **kwargs))
 
 def page(*dec_args, **dec_kwargs):
     # The way decorators with arguments work is that we need to return another
@@ -48,19 +52,21 @@ def page(*dec_args, **dec_kwargs):
         # just return the function unchanged.
         return function
 
+    # We want to handle the case of no arguments being passed in
+
     return real_decorator
 
 def get_pages():
-    """Returns a list of all of the pages regstered in the application."""
+    """Returns a list of all of the pages registered in the application."""
 
     return _pages
 
 class RenderedPage:
-    def __init__(self, contents, path = None):
-        self.contents = contents
+    def __init__(self, body, path = None):
+        self.body = body
         self.path = path
 
-class Page:
+class Page(object):
     def __init__(self, func, path = None, files = None):
         """
         :param func: The function that will be called to generate the page.
@@ -79,7 +85,7 @@ class Page:
         self.path = path
         self.files = files
 
-    def render_page(self, from_file = None):
+    def render(self, from_file = None):
         """
         Calls ``func`` appropriately and returns a RenderedPage object.
 
@@ -98,13 +104,25 @@ class Page:
         if isinstance(result, basestring):
             if self.path is None:
                 log.error(
-                    "Page function for %s returned only contents and path not "
+                    "Page function for %s returned only body and path not "
                     "set.", repr(self)
                 )
                 raise RuntimeError("Path not set.")
 
-            result = RenderedPage(contents = result, path = self.path)
+            result = RenderedPage(body = result, path = self.path)
 
         return result
 
+class StaticPage(object):
+    def __init__(self, source_path, dest_path = None):
+        self.source_path = source_path
 
+        if dest_path is None:
+            self.dest_path = self.source_path
+        else:
+            self.dest_path = dest_path
+
+    def render(self):
+        return RenderedPage(
+            body = documents.open_file(self.source_path).read(),
+            path = self.dest_path)
