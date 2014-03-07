@@ -18,6 +18,7 @@
 # internal
 from . import exceptions
 from . import documents
+from . import utils
 
 # set up logging
 import logging
@@ -39,8 +40,12 @@ def register_page(func, *args, **kwargs):
         func.__module__)
 
 def register_asset(source_path, *args, **kwargs):
-    _pages.append(StaticPage(source_path, *args, **kwargs))
+    _pages.append(Asset(source_path, *args, **kwargs))
     log.debug("Collected asset at %r.", source_path)
+
+def register_asset_glob(files, *args, **kwargs):
+    _pages.append(AssetGlob(files, *args, **kwargs))
+    log.debug("Collect asset glob at %r.", files)
 
 def page(*dec_args, **dec_kwargs):
     # The way decorators with arguments work is that we need to return another
@@ -70,7 +75,7 @@ class RenderedPage:
         self.path = path
 
 class Page(object):
-    def __init__(self, func, path = None, files = None):
+    def __init__(self, func, path = None, files = None, open_files = True):
         """
         :param func: The function that will be called to generate the page.
         :param path: The desired relative path of the page. If `None`, a path must
@@ -81,12 +86,16 @@ class Page(object):
                 string in the list will be globbed and then `func` will be
                 called for each unique matching file. If `None`, `func` will be
                 called only once.
+        :param open_files: If True each file will be opened and a Document
+                object will be given to your function. If False, your function
+                will only receive the file path of the matched file.
 
         """
 
         self.func = func
         self.path = path
         self.files = files
+        self.open_files = open_files
 
     def render(self, from_file = None):
         """
@@ -116,17 +125,25 @@ class Page(object):
 
         return result
 
-class StaticPage(Page):
+class Asset(Page):
     def __init__(self, source_path, dest_path = None):
         self.source_path = source_path
 
         if dest_path is None:
             dest_path = self.source_path
 
-        super(StaticPage, self).__init__(func = self._static_func,
+        super(Asset, self).__init__(func = self._asset_func,
             path = dest_path)
 
-    def _static_func(self):
+    def _asset_func(self):
         return RenderedPage(
             content = documents.open_file(self.source_path).read(),
             path = self.path)
+
+class AssetGlob(Page):
+    def __init__(self, files):
+        super(AssetGlob, self).__init__(func = self._asset_glob_func,
+            files = files, open_files = False)
+
+    def _asset_glob_func(self, path):
+        return RenderedPage(content = open(path, "rb").read(), path = path)

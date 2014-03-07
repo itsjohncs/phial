@@ -19,9 +19,9 @@
 from . import exceptions
 from . import pages
 from . import documents
+from . import utils
 
 # stdlib
-import glob
 import os
 import errno
 
@@ -66,7 +66,11 @@ def process(src_dir = "./site", output_dir = "./output"):
         # Make sure the destination's directory exists
         _mkdirs(os.path.dirname(destination))
 
-        open(destination, "w").write(i.content.encode("utf_8"))
+        with open(destination, "w") as f:
+            if isinstance(i.content, unicode):
+                f.write(i.content.encode("utf_8"))
+            else:
+                f.write(i.content)
 
 def process_page(page):
     """
@@ -79,32 +83,13 @@ def process_page(page):
     if page.files is None:
         rendered_pages.append(page.render())
     else:
-        for f in glob_files(page.files):
-            document = documents.Document(f)
+        for f in utils.glob_files(page.files):
+            # Only open the file if we're supposed to
+            if page.open_files:
+                document = documents.Document(f)
+            else:
+                document = f
+
             rendered_pages.append(page.render(document))
 
     return rendered_pages
-
-def glob_files(files):
-    """
-    Returns a list of files matching the pattern(s) in ``files``.
-
-    :param files: May be either a string or a list of strings. If a string, the
-        pattern will be globbed and all matching files will be returned. If a
-        list of strings, all of the patterns will be globbed and all unique
-        file paths will be returned.
-
-    :returns: A list of file paths.
-
-    """
-
-    if isinstance(files, basestring):
-        result = glob.glob(files)
-    else:
-        # Glob every pattern and grab the unique results
-        result_set = set()
-        for i in files:
-            result_set.update(glob.glob(i))
-        result = list(result_set)
-
-    return result
