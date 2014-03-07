@@ -36,7 +36,7 @@ A list of all of the pages registered in the application.
 def register_page(func, *args, **kwargs):
     _pages.append(Page(func, *args, **kwargs))
 
-def register_static_page(*args, **kwargs):
+def register_asset(*args, **kwargs):
     _pages.append(StaticPage(*args, **kwargs))
 
 def page(*dec_args, **dec_kwargs):
