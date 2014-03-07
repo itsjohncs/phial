@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .processer import *
+from .processor import *
 from .pages import *
 from .exceptions import *
 from .documents import *

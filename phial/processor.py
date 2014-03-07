@@ -16,9 +16,9 @@
 # limitations under the License.
 
 # internal
-import exceptions
-import pages
-import documents
+from . import exceptions
+from . import pages
+from . import documents
 
 # stdlib
 import glob
@@ -38,27 +38,29 @@ def _mkdirs(dir_path):
         if e.errno != errno.EEXIST:
             raise
 
-def process(src_dir = "./site", build_dir = "./build"):
+def process(src_dir = "./site", output_dir = "./output"):
     # We want all of the relative paths in the user's code to be relative to
     # the source directory, so we're actually going to modify our current
     # directory process-wide.
     old_cwd = os.getcwd()
     os.chdir(src_dir)
+    log.debug("Changed into source directory %r.", src_dir)
 
     # Go through every page we know about and process each one.
+    log.info("Collected pages %r.", pages.get_pages())
     rendered_pages = []
     for i in pages.get_pages():
         rendered_pages += process_page(i)
 
-    # During the build step, we reset the current directory back to whatever
+    # During the output step, we reset the current directory back to whatever
     # it was to begin with.
     os.chdir(old_cwd)
 
-    # Spill out the rendered pages into the build directory
+    # Spill out the rendered pages into the output directory
     for i in rendered_pages:
-        destination = os.path.join(build_dir, i.path)
+        destination = os.path.join(output_dir, i.path)
         if not os.path.abspath(destination).startswith(
-                os.path.abspath(build_dir)):
+                os.path.abspath(output_dir)):
             raise ValueError("destination path is invalid: {}".format(
                 destination))
 

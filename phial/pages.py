@@ -16,8 +16,8 @@
 # limitations under the License.
 
 # internal
-import exceptions
-import documents
+from . import exceptions
+from . import documents
 
 # set up logging
 import logging
