@@ -47,7 +47,6 @@ def process(src_dir = "./site", output_dir = "./output"):
     log.debug("Changed into source directory %r.", src_dir)
 
     # Go through every page we know about and process each one.
-    log.info("Collected pages %r.", pages.get_pages())
     rendered_pages = []
     for i in pages.get_pages():
         rendered_pages += process_page(i)
@@ -74,8 +73,6 @@ def process_page(page):
     Processes a page and returns a list of RenderedPage objects.
 
     """
-
-    log.info("Processing %s", repr(page))
 
     # Check if this page is generated based on some files.
     rendered_pages = []

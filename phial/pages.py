@@ -35,9 +35,12 @@ A list of all of the pages registered in the application.
 
 def register_page(func, *args, **kwargs):
     _pages.append(Page(func, *args, **kwargs))
+    log.debug("Collected page with function %r from module %r.", func.__name__,
+        func.__module__)
 
-def register_asset(*args, **kwargs):
-    _pages.append(StaticPage(*args, **kwargs))
+def register_asset(source_path, *args, **kwargs):
+    _pages.append(StaticPage(source_path, *args, **kwargs))
+    log.debug("Collected asset at %r.", source_path)
 
 def page(*dec_args, **dec_kwargs):
     # The way decorators with arguments work is that we need to return another

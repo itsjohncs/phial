@@ -68,9 +68,12 @@ def main():
         log.error("Could not load app at %r.", app_path, exc_info = True)
         sys.exit(100)
 
+    log.info("Building application from sources in %r.", options.source)
     try:
         processor.process(src_dir = options.source,
             output_dir = options.output)
     except:
         log.error("Failed to build app.", exc_info = True)
         sys.exit(101)
+
+    log.info("Succesfully built application. Output in %r.", options.output)
