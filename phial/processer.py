@@ -65,7 +65,7 @@ def process(src_dir = "./site", build_dir = "./build"):
         # Make sure the destination's directory exists
         _mkdirs(os.path.dirname(destination))
 
-        open(destination, "w").write(i.body.encode("utf_8"))
+        open(destination, "w").write(i.content.encode("utf_8"))
 
 def process_page(page):
     """

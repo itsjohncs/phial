@@ -62,8 +62,8 @@ def get_pages():
     return _pages
 
 class RenderedPage:
-    def __init__(self, body, path = None):
-        self.body = body
+    def __init__(self, content, path = None):
+        self.content = content
         self.path = path
 
 class Page(object):
@@ -104,12 +104,12 @@ class Page(object):
         if isinstance(result, basestring):
             if self.path is None:
                 log.error(
-                    "Page function for %s returned only body and path not "
+                    "Page function for %s returned only content and path not "
                     "set.", repr(self)
                 )
                 raise RuntimeError("Path not set.")
 
-            result = RenderedPage(body = result, path = self.path)
+            result = RenderedPage(content = result, path = self.path)
 
         return result
 
@@ -125,5 +125,5 @@ class StaticPage(Page):
 
     def _static_func(self):
         return RenderedPage(
-            body = documents.open_file(self.source_path).read(),
+            content = documents.open_file(self.source_path).read(),
             path = self.path)

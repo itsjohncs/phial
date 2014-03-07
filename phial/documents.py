@@ -74,13 +74,13 @@ def open_file(path):
 
 def parse_document(document_file):
     """
-    Will parse a document into its frontmatter and body components. The
+    Will parse a document into its frontmatter and content components. The
     frontmatter will be decoded with a YAML parser.
 
     :param document_file: A file-like object to consume. It must produce
         ``unicode`` objects when read from rather than ``str``.
 
-    :returns: A two-tuple ``(frontmatter, body)``.
+    :returns: A two-tuple ``(frontmatter, content)``.
 
     """
 
@@ -104,17 +104,17 @@ def parse_document(document_file):
 
     decoded_front_matter = yaml.safe_load(front_matter.getvalue())
 
-    # The rest of the file is the body. Note that we have to do multiple reads
+    # The rest of the file is the content. Note that we have to do multiple reads
     # here. Not entirely sure why yet but I suspect an internal buffer used by
     # the file's next() function.
-    body = document_file.read()
+    content = document_file.read()
     while True:
         data = document_file.read()
         if data == "":
             break
-        body += data
+        content += data
 
-    return (decoded_front_matter, body)
+    return (decoded_front_matter, content)
 
 class Document:
     """
@@ -124,7 +124,7 @@ class Document:
         may be ``None``.
     :ivar frontmatter: A dictionary containing the parsed frontmatter of the
         document.
-    :ivar body: A unicode string containing the body of the document (which is
+    :ivar content: A unicode string containing the content of the document (which is
         defined as everything that's not the frontmatter).
     """
 
@@ -141,4 +141,4 @@ class Document:
             self.file_path = None
             document_file = document
 
-        self.frontmatter, self.body = parse_document(document_file)
+        self.frontmatter, self.content = parse_document(document_file)
