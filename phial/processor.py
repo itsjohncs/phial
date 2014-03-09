@@ -38,13 +38,13 @@ def _mkdirs(dir_path):
         if e.errno != errno.EEXIST:
             raise
 
-def process(src_dir = "./site", output_dir = "./output"):
+def process(source_dir = "./site", output_dir = "./output"):
     # We want all of the relative paths in the user's code to be relative to
     # the source directory, so we're actually going to modify our current
     # directory process-wide.
     old_cwd = os.getcwd()
-    os.chdir(src_dir)
-    log.debug("Changed into source directory %r.", src_dir)
+    os.chdir(source_dir)
+    log.debug("Changed into source directory %r.", source_dir)
 
     # Go through every page we know about and process each one.
     rendered_pages = []
