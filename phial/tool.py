@@ -9,6 +9,8 @@ import time
 import itertools
 import glob
 import multiprocessing
+import BaseHTTPServer
+import SimpleHTTPServer
 from optparse import OptionParser, make_option
 
 # internal
@@ -61,6 +63,25 @@ def parse_arguments(args = sys.argv[1:]):
                 "The amount of time to wait in between polling for changes. "
                 "Measured in seconds (can be a floating point value). "
                 "Defaults to %default."
+        ),
+        make_option(
+            "--serve", action = "store_true", default = False,
+            help =
+                "If sepcified, the built site will be served by a built-in "
+                "HTTP server."
+        ),
+        make_option(
+            "--serve-port", action = "store", default = "9000",
+            help = "The TCP port to serve requests on. Defaults to %default."
+        ),
+        make_option(
+            "--serve-host", action = "store", default = "localhost",
+            help =
+                "The host to serve requests on. This will determine the "
+                "network device that is listened to. You almost certainly "
+                "want to leave this on the default setting as exposing the "
+                "server publicly using the built-in HTTP server could cause "
+                "a security issue. Defaults to %default."
         )
     ]
 
@@ -116,7 +137,6 @@ def get_state_token(dir_paths):
 
     hasher = hashlib.md5()
     globbed_paths = list(expand_globs(dir_paths))
-    log.debug("Globbed watch path: %r.", globbed_paths)
     for root, dirs, files in walk_many(globbed_paths):
         # Setting topdown to True above allows us to modify the directory list
         # in dirs. The walk function will visit each item in the order in which
@@ -157,7 +177,6 @@ def monitor(watch_list, wait_time, callback):
     list.
 
     """
-
 
     log.info("Entering monitor mode. Watch list: %r.", watch_list)
 
@@ -204,15 +223,42 @@ def fork_and_build_app(*args, **kwargs):
     # in case anything goes wrong.
     p.daemon = True
 
-    log.debug("Forking. Passings args %r and kwargs %r", args, kwargs)
+    log.debug("Forking to build app. Passings args %r and kwargs %r to "
+        "build_app().", args, kwargs)
     p.start()
 
     # Wait for the process to terminate
     p.join()
 
-    log.debug("Done. Process returned %r.", p.exitcode)
+    log.debug("Forked process finished, exit code %r.", p.exitcode)
     if p.exitcode != 0:
         log.warning("Failed to build site.")
+
+class SimpleServer(object):
+    def __init__(self, public_dir, host, port):
+        self.public_dir = public_dir
+        self.host = host
+        self.port = port
+
+        # The forked process actually serving.
+        self._process = None
+
+def fork_and_serve(public_dir, host, port, verbose):
+    # Override the request handler's logging feature to log debug messages
+    class RequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+        def log_message(self, *args, **kwargs):
+            log.debug(*args, **kwargs)
+
+    def serve():
+        os.chdir(public_dir)
+        server = BaseHTTPServer.HTTPServer((host, port), RequestHandler)
+        server.log_message = log.debug
+        server.serve_forever()
+
+    log.debug("Starting server on host %r port %r.", host, port)
+    p = multiprocessing.Process(target = serve)
+    p.daemon = True
+    p.start()
 
 def main():
     try:
@@ -242,10 +288,17 @@ def _main():
 
         watch_list.append(options.source)
 
+    # We'll pass this callback function to our monitor routine
     callback = lambda: fork_and_build_app(app_path, options.source,
         options.output)
 
+    # Build the app before we go into monitor mode, also takes care of building
+    # it if we're not going into monitor mode at all.
     callback()
+
+    if options.serve:
+        fork_and_serve(options.output, options.serve_host,
+            int(options.serve_port), options.verbose)
 
     if options.monitor:
         monitor(watch_list, float(options.watch_poll_frequency), callback)
