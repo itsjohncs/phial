@@ -57,7 +57,7 @@ def process(source_dir = "./site", output_dir = "./output"):
 
     # Spill out the rendered pages into the output directory
     for i in rendered_pages:
-        destination = os.path.join(output_dir, i.path)
+        destination = os.path.join(output_dir, i.target)
         if not os.path.abspath(destination).startswith(
                 os.path.abspath(output_dir)):
             raise ValueError("destination path is invalid: {}".format(

@@ -70,16 +70,16 @@ def get_pages():
     return _pages
 
 class RenderedPage:
-    def __init__(self, content, path = None):
+    def __init__(self, content, target = None):
         self.content = content
-        self.path = path
+        self.target = target
 
 class Page(object):
-    def __init__(self, func, path = None, files = None, open_files = True):
+    def __init__(self, func, target = None, files = None, open_files = True):
         """
         :param func: The function that will be called to generate the page.
-        :param path: The desired relative path of the page. If `None`, a path
-                must be specified in ``func``'s return value.
+        :param target: The desired relative target of the page. If `None`, a
+                target must be specified in ``func``'s return value.
         :param files: May be ``None``, a string, or a list of strings.  If a
                 string, that string will be globbed and ``func`` will be called
                 for each unique matching file. If a list of strings, each
@@ -88,12 +88,12 @@ class Page(object):
                 will be called only once.
         :param open_files: If True each file will be opened and a Document
                 object will be given to your function. If False, your function
-                will only receive the file path of the matched file.
+                will only receive the file target of the matched file.
 
         """
 
         self.func = func
-        self.path = path
+        self.target = target
         self.files = files
         self.open_files = open_files
 
@@ -114,14 +114,14 @@ class Page(object):
             return None
 
         if isinstance(result, basestring):
-            if self.path is None:
+            if self.target is None:
                 log.error(
-                    "Page function for %s returned only content and path not "
+                    "Page function for %s returned only content and target not "
                     "set.", repr(self)
                 )
-                raise RuntimeError("Path not set.")
+                raise RuntimeError("target not set.")
 
-            result = RenderedPage(content = result, path = self.path)
+            result = RenderedPage(content = result, target = self.target)
 
         return result
 
@@ -133,17 +133,17 @@ class Asset(Page):
             dest_path = self.source_path
 
         super(Asset, self).__init__(func = self._asset_func,
-            path = dest_path)
+            target = dest_path)
 
     def _asset_func(self):
         return RenderedPage(
             content = documents.open_file(self.source_path).read(),
-            path = self.path)
+            target = self.target)
 
 class AssetGlob(Page):
     def __init__(self, files):
         super(AssetGlob, self).__init__(func = self._asset_glob_func,
             files = files, open_files = False)
 
-    def _asset_glob_func(self, path):
-        return RenderedPage(content = open(path, "rb").read(), path = path)
+    def _asset_glob_func(self, target):
+        return RenderedPage(content = open(target, "rb").read(), target = target)
