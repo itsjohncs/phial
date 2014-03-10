@@ -180,11 +180,18 @@ def monitor(watch_list, wait_time, callback):
 
     log.info("Entering monitor mode. Watch list: %r.", watch_list)
 
-    while True:
-        token = get_state_token(watch_list)
+    old_token = get_state_token(watch_list)
 
-        while token == get_state_token(watch_list):
+    while True:
+        while True:
             time.sleep(wait_time)
+
+            current_token = get_state_token(watch_list)
+            if old_token != current_token:
+                break
+        old_token = current_token
+
+        log.info("Detected change in watch list.")
 
         callback()
 
@@ -250,10 +257,13 @@ def fork_and_serve(public_dir, host, port, verbose):
             log.debug(*args, **kwargs)
 
     def serve():
-        os.chdir(public_dir)
-        server = BaseHTTPServer.HTTPServer((host, port), RequestHandler)
-        server.log_message = log.debug
-        server.serve_forever()
+        try:
+            os.chdir(public_dir)
+            server = BaseHTTPServer.HTTPServer((host, port), RequestHandler)
+            server.log_message = log.debug
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
 
     log.debug("Starting server on host %r port %r.", host, port)
     p = multiprocessing.Process(target = serve)
@@ -261,14 +271,15 @@ def fork_and_serve(public_dir, host, port, verbose):
     p.start()
 
 def main():
+    options, arguments = parse_arguments()
+
     try:
-        _main()
+        _main(options, arguments)
     except KeyboardInterrupt:
-        log.info("User sent interrupt, exiting.", exc_info = True)
+        log.info("User sent interrupt, exiting.", exc_info = options.verbose)
         sys.exit(1)
 
-def _main():
-    options, arguments = parse_arguments()
+def _main(options, arguments):
     app_path = arguments[0]
 
     setup_logging(options.verbose)
