@@ -78,14 +78,14 @@ class Page(object):
     def __init__(self, func, path = None, files = None, open_files = True):
         """
         :param func: The function that will be called to generate the page.
-        :param path: The desired relative path of the page. If `None`, a path must
-                be specified in `func`'s return value.
-        :param files: May be `None`, a string, or a list of strings.  If a
-                string, that string will be globbed and `func` will be called
+        :param path: The desired relative path of the page. If `None`, a path
+                must be specified in ``func``'s return value.
+        :param files: May be ``None``, a string, or a list of strings.  If a
+                string, that string will be globbed and ``func`` will be called
                 for each unique matching file. If a list of strings, each
-                string in the list will be globbed and then `func` will be
-                called for each unique matching file. If `None`, `func` will be
-                called only once.
+                string in the list will be globbed and then ``func`` will be
+                called for each unique matching file. If ``None``, ``func``
+                will be called only once.
         :param open_files: If True each file will be opened and a Document
                 object will be given to your function. If False, your function
                 will only receive the file path of the matched file.
