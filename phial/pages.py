@@ -25,27 +25,19 @@ import logging
 log = logging.getLogger("phial.pages")
 
 _pages = []
-"""
-A list of all of the pages registered in the application.
+"""A list of all of the pages registered in the application. """
 
-.. note::
-
-    This should not be accessed directly, use get_pages() instead.
-
-"""
+_assets = []
+"""A list of all registered assets."""
 
 def register_page(func, *args, **kwargs):
     _pages.append(Page(func, *args, **kwargs))
     log.debug("Collected page with function %r from module %r.", func.__name__,
         func.__module__)
 
-def register_asset(source_path, *args, **kwargs):
+def register_assets(*args):
     _pages.append(Asset(source_path, *args, **kwargs))
     log.debug("Collected asset at %r.", source_path)
-
-def register_asset_glob(files, *args, **kwargs):
-    _pages.append(AssetGlob(files, *args, **kwargs))
-    log.debug("Collect asset glob at %r.", files)
 
 def page(*dec_args, **dec_kwargs):
     # The way decorators with arguments work is that we need to return another
@@ -60,90 +52,74 @@ def page(*dec_args, **dec_kwargs):
         # just return the function unchanged.
         return function
 
-    # We want to handle the case of no arguments being passed in
-
     return real_decorator
 
-def get_pages():
-    """Returns a list of all of the pages registered in the application."""
+class RenderedPage(object):
+    """
+    Represents a single page (rather than a type of page like pages.Page
+    objects). The page can be an HTML file, a CSS stylesheet, a cat picture,
+    or even a blank file.
 
-    return _pages
+    :ivar target: The path (relative to the output directory) that the content
+            should be written into.
+    :ivar content: The page's content. Can either be a ``unicode`` object (in
+            which case it will be written to the target file using the
+            configured output encoding) or a ``str`` object (it will be
+            written directly to the file).
 
-class RenderedPage:
-    def __init__(self, content, target = None):
-        self.content = content
+    """
+
+    def __init__(self, target, content):
         self.target = target
+        self.content = content
+
+class Asset(object):
+    """
+    Represents a single static page. Static in this case means that no
+    processing has to be done on the contents of the source file(s).
+
+    :ivar target: The path (relative to the output directory) that the source
+            file will be copied to.
+    :ivar source: The path (relative to the source directory) that the source
+            file will be copied from.
+
+    """
+
+    def __init__(self, target, source):
+        self.target = target
+        self.source = source
 
 class Page(object):
-    def __init__(self, func, target = None, files = None, open_files = True):
-        """
-        :param func: The function that will be called to generate the page.
-        :param target: The desired relative target of the page. If `None`, a
-                target must be specified in ``func``'s return value.
-        :param files: May be ``None``, a string, or a list of strings.  If a
-                string, that string will be globbed and ``func`` will be called
-                for each unique matching file. If a list of strings, each
-                string in the list will be globbed and then ``func`` will be
-                called for each unique matching file. If ``None``, ``func``
-                will be called only once.
-        :param open_files: If True each file will be opened and a Document
-                object will be given to your function. If False, your function
-                will only receive the file target of the matched file.
+    """
+    Conceptually represents a type of page on a site (ex: a project page, the
+    home page, or a blog post). Pages always have a function associated with
+    them that produces the actual content.
 
-        """
+    :ivar func: The function that will be called to generate the page.
+    :ivar target: The desired relative target of the page. This string will be
+            run through `str.format() <http://docs.python.org/2/library/stdtypes.html#str.format>`_
+            for each file. If ``None``, a ``RenderedPage`` object must be
+            returned by ``func`` that specifies an explicit ``target``.
+    :ivar files: May be ``None``, a string, or a list of strings.  If a
+            string, that string will be globbed and ``func`` will be called
+            for each unique matching file. If a list of strings, each
+            string in the list will be globbed and then ``func`` will be
+            called for each unique matching file. If ``None``, ``func``
+            will be called only once.
+    :ivar parse_files: If True each file will be opened and a Document
+            object will be given to your function. Any frontmatter in the
+            file will be parsed out. If False, your function will only
+            receive the path of the matched file.
 
+    """
+
+    def __init__(self, func, target = None, files = None, parse_files = True):
         self.func = func
         self.target = target
         self.files = files
-        self.open_files = open_files
+        self.parse_files = parse_files
 
-    def render(self, from_file = None):
-        """
-        Calls ``func`` appropriately and returns a RenderedPage object.
-
-        """
-
-        if from_file is None:
-            result = self.func()
-        else:
-            result = self.func(from_file)
-
-        if result is None:
-            log.info("Page function %s returned None, ignoring.",
-                repr(self))
-            return None
-
-        if isinstance(result, basestring):
-            if self.target is None:
-                log.error(
-                    "Page function for %s returned only content and target not "
-                    "set.", repr(self)
-                )
-                raise RuntimeError("target not set.")
-
-            result = RenderedPage(content = result, target = self.target)
-
-        return result
-
-class Asset(Page):
-    def __init__(self, source_path, dest_path = None):
-        self.source_path = source_path
-
-        if dest_path is None:
-            dest_path = self.source_path
-
-        super(Asset, self).__init__(func = self._asset_func,
-            target = dest_path)
-
-    def _asset_func(self):
-        return RenderedPage(
-            content = documents.open_file(self.source_path).read(),
-            target = self.target)
-
-class AssetGlob(Page):
-    def __init__(self, files):
-        super(AssetGlob, self).__init__(func = self._asset_glob_func,
-            files = files, open_files = False)
-
-    def _asset_glob_func(self, target):
-        return RenderedPage(content = open(target, "rb").read(), target = target)
+    def __repr__(self):
+        return ("Page(func = {!r}, target = {!r}, files = {!r}, "
+            "parse_files = {!r}").format(self.func, self.target, self.files,
+                self.parse_files)

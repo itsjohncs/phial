@@ -94,11 +94,13 @@ def parse_document(document_file):
 
         front_matter.write(line)
 
+        # Check if this line is the end of the frontmatter, ignoring *trailing*
+        # white space.
         if line.rstrip() == FRONT_MATTER_END:
             break
     else:
-        # This occurs if we didn't break above, so we know that
-        # there was no frontmatter after all.
+        # This occurs if we didn't break above, so we know that there was no
+        # frontmatter after all.
         document_file.seek(0)
         return (None, document_file.read())
 

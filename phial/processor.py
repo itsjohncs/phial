@@ -39,6 +39,13 @@ def _mkdirs(dir_path):
             raise
 
 def process(source_dir = "./site", output_dir = "./output"):
+    """
+    Processes all of the pages in your site appropriately. This is the function
+    the drives the generation of a Phial site and is what is run when you use
+    the Phial command line tool.
+
+    """
+
     # We want all of the relative paths in the user's code to be relative to
     # the source directory, so we're actually going to modify our current
     # directory process-wide.
@@ -46,9 +53,9 @@ def process(source_dir = "./site", output_dir = "./output"):
     os.chdir(source_dir)
     log.debug("Changed into source directory %r.", source_dir)
 
-    # Go through every page we know about and process each one.
+    # Go through every page we know about and process each one
     rendered_pages = []
-    for i in pages.get_pages():
+    for i in pages._pages:
         rendered_pages += process_page(i)
 
     # During the output step, we reset the current directory back to whatever
@@ -72,24 +79,100 @@ def process(source_dir = "./site", output_dir = "./output"):
             else:
                 f.write(i.content)
 
+def resolve_target(raw_target, source):
+    """
+    Resolves a target string with the provided source.
+
+    :param raw_target: The unresolved target string (ex:
+            ``projects/{name}.htm``)
+    :param source: A Document instance or a file path (the same as what gets
+            passed to a Page's func).
+
+    :returns: The resulting file path.
+
+    """
+
+    # We're going to collect information we'll give to str.format()
+    target_info = {}
+
+    if source is not None:
+        # The source is either a Document or a path
+        if isinstance(source, documents.Document):
+            source_path = source.file_path
+            target_info["frontmatter"] = source.frontmatter
+        else:
+            source_path = source
+
+        # Give format lots of info on the file's path
+        target_info.update({
+            "path": source_path,
+            "dir": os.path.dirname(source_path),
+            "fullname": os.path.basename(source_path),
+            "name": os.path.splitext(os.path.basename(source_path))[0],
+        })
+
+    # Actually run format on the string and resolve it now
+    return raw_target.format(**target_info)
+
+def _resolve_result(result, page, source):
+        """
+        Transforms a result as returned by a page function and transforms it
+        into an appropriate RenderedPage object.
+
+        """
+
+        # Package the result up into a RenderedPage if one wasn't returned
+        if not isinstance(result, pages.RenderedPage):
+            result = pages.RenderedPage(target = None, content = result)
+
+        # If the user didn't explictly provide a target in their return value,
+        # and there the page has a target listed...
+        if result.target is None and page.target is not None:
+            result.target = resolve_target(page.target, source)
+
+        # If no path is provided by the user but we have a source, we default
+        # to using the source's path as the target path as well.
+        if result.target is None and source is not None:
+            # The source can be a document or a file path
+            if isinstance(source, documents.Document):
+                result.target = source.file_path
+            else:
+                result.target = source
+
+        # If the result still doesn't have a target a this point we don't have
+        # enough information to figure it out.
+        if result.target is None:
+            raise RuntimeError("not enough informaton to resolve target for "
+                "{!r}".format(page))
+
+        return result
+
 def process_page(page):
-    """
-    Processes a page and returns a list of RenderedPage objects.
+    """Processes a single page and returns a list of RenderedPage objects."""
 
-    """
-
-    # Check if this page is generated based on some files.
     rendered_pages = []
     if page.files is None:
-        rendered_pages.append(page.render())
-    else:
-        for f in utils.glob_files(page.files):
-            # Only open the file if we're supposed to
-            if page.open_files:
-                document = documents.Document(f)
-            else:
-                document = f
+        # The page doesn't expect any files so just call it without arguments
+        result = page.func()
 
-            rendered_pages.append(page.render(document))
+        result = _resolve_result(result, page, None)
+        rendered_pages.append(result)
+    else:
+        # We're going to execute the page function with each file we find
+        for path in utils.glob_files(page.files):
+            # Only open and parse the file if we're supposed to
+            if page.parse_files:
+                source = documents.Document(path)
+            else:
+                source = path
+
+            # Execute the page function and get whatever the user returns
+            result = page.func(source)
+
+            if result is None:
+                continue
+
+            result = _resolve_result(result, page, source)
+            rendered_pages.append(result)
 
     return rendered_pages
