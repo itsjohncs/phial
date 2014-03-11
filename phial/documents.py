@@ -63,22 +63,16 @@ def open_file(path):
         (codecs.BOM_UTF16_LE, u"utf_16")
     ]
 
-    print [i[0] for i in BOMS]
-
     # Grab just enough bytes to determine the encoding
     with open(path, u"rb") as raw_file:
         max_bom_length = reduce(max, [len(i[0]) for i in BOMS])
-        print "max_bom_length", max_bom_length
         front_data = raw_file.read(max_bom_length)
 
     file_encoding = DEFAULT_ENCODING
     for bom, encoding in BOMS:
         if front_data.startswith(bom):
             file_encoding = encoding
-            print "HIT"
             break
-
-    print file_encoding
 
     return codecs.open(path, "r", encoding = file_encoding)
 
