@@ -16,7 +16,7 @@ from optparse import OptionParser, make_option
 # internal
 from . import processor
 
-log = logging.getLogger("phial.tool")
+log = logging.getLogger(__name__)
 
 def parse_arguments(args = sys.argv[1:]):
     option_list = [
@@ -116,10 +116,12 @@ def parse_arguments(args = sys.argv[1:]):
 def setup_logging(verbose):
     if verbose:
         log_level = logging.DEBUG
+        format = ("[%(name)15s:%(lineno)3s - %(funcName)20s] %(levelname)5s "
+            "- %(message)s")
     else:
         log_level = logging.INFO
+        format  = "%(levelname)s - %(message)s"
 
-    format = "[%(levelname)s] %(message)s"
 
     logging.basicConfig(level = log_level, format = format)
 
@@ -305,14 +307,19 @@ def fork_and_serve(public_dir, host, port, verbose):
     p.daemon = True
     p.start()
 
-def main():
-    options, arguments = parse_arguments()
+def main(args = sys.argv[1:]):
+    options, arguments = parse_arguments(args)
 
     try:
         _main(options, arguments)
     except KeyboardInterrupt:
         log.info("User sent interrupt, exiting.", exc_info = options.verbose)
         sys.exit(1)
+
+def run_tool(*args):
+    """Runs the Phial command line tool with the given arguments."""
+
+    main(args)
 
 def _main(options, arguments):
     app_path = arguments[0]

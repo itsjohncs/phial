@@ -22,7 +22,7 @@ from . import utils
 
 # set up logging
 import logging
-log = logging.getLogger("phial.pages")
+log = logging.getLogger(__name__)
 
 _pages = []
 """A list of all of the pages registered in the application. """
@@ -35,9 +35,11 @@ def register_page(func, *args, **kwargs):
     log.debug("Collected page with function %r from module %r.", func.__name__,
         func.__module__)
 
-def register_assets(*args):
-    _pages.append(Asset(source_path, *args, **kwargs))
-    log.debug("Collected asset at %r.", source_path)
+def register_assets(target, *files):
+    _assets.append(Asset(target, files))
+
+def register_simple_assets(*files):
+    register_assets(None, *files)
 
 def page(*dec_args, **dec_kwargs):
     # The way decorators with arguments work is that we need to return another
@@ -73,21 +75,41 @@ class RenderedPage(object):
         self.target = target
         self.content = content
 
-class Asset(object):
+class ResolvedAsset(object):
     """
     Represents a single static page. Static in this case means that no
-    processing has to be done on the contents of the source file(s).
+    processing has to be done on the contents of the source file.
 
     :ivar target: The path (relative to the output directory) that the source
-            file will be copied to.
-    :ivar source: The path (relative to the source directory) that the source
-            file will be copied from.
-
+            should be copied to.
+    :ivar source: The path (relative to the source directory) of the file to
+            be copied.
     """
 
     def __init__(self, target, source):
         self.target = target
         self.source = source
+
+    def __repr__(self):
+        return "ResolvedAsset(target = {!r}, source = {!r})".format(
+            self.target, self.source)
+
+class Asset(object):
+    """
+    Conceptually represents a glob of static pages. Static in this case means
+    that no processing has to be done on the contents of the source file(s).
+
+    :ivar target: The path (relative to the output directory) that the source
+            file will be copied to. Similarly to Path.target,  this string will
+            be run through `str.format() <http://docs.python.org/2/library/stdtypes.html#str.format>`_
+            for each file.
+    :ivar files: May be a string, or a list of strings.  If a string, that string will be globbed, if a list of strings, each string in the list will be globbed. All matching files will be copied to the target.
+
+    """
+
+    def __init__(self, target, files):
+        self.target = target
+        self.files = files
 
 class Page(object):
     """
