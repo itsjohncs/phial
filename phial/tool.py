@@ -290,15 +290,6 @@ def fork_and_build_app(*args, **kwargs):
     if p.exitcode != 0:
         log.warning("Failed to build site.")
 
-class SimpleServer(object):
-    def __init__(self, public_dir, host, port):
-        self.public_dir = public_dir
-        self.host = host
-        self.port = port
-
-        # The forked process actually serving.
-        self._process = None
-
 def fork_and_serve(public_dir, host, port, verbose):
     # Override the request handler's logging feature to log debug messages
     class RequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -314,7 +305,7 @@ def fork_and_serve(public_dir, host, port, verbose):
         except KeyboardInterrupt:
             pass
 
-    log.info("Starting server on host %r port %r.", host, port)
+    log.info("Starting server at http://%s:%s", host, port)
     p = multiprocessing.Process(target = serve)
     p.daemon = True
     p.start()
