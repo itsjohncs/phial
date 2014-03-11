@@ -15,8 +15,8 @@ Phial is a static site generator for Python developers.
 
 .. code-block:: bash
 
-    pip install phial
-    phial --testing hello.py # Serves at http://localhost:9000
+    $ pip install phial
+    $ phial --testing hello.py # Serves at http://localhost:9000
 
 What's Inluded?
 ---------------
