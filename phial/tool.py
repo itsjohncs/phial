@@ -21,10 +21,16 @@ from . import processor
 log = logging.getLogger(__name__)
 
 def parse_arguments(args = sys.argv[1:]):
+    def testing_callback(option, opt, value, parser):
+        parser.values.output = ":temp:"
+        parser.values.serve = True
+        parser.values.monitor = True
+
     option_list = [
         make_option(
-            "-v", "--verbose", action = "store_true", default = False,
-            help = "If specified, DEBUG messages will be printed."
+            "-t", "--testing", action = "callback",
+            callback = testing_callback,
+            help = "Alias for: '--output :temp: --serve --monitor'."
         ),
         make_option(
             "-o", "--output", action = "store", default = "./output",
@@ -36,6 +42,10 @@ def parse_arguments(args = sys.argv[1:]):
             "-s", "--source", action = "store", default = "./site",
             help =
                 "The directory the source files are in. Defaults to %default."
+        ),
+        make_option(
+            "-v", "--verbose", action = "store_true", default = False,
+            help = "If specified, DEBUG messages will be printed."
         ),
         make_option(
             "-m", "--monitor", action = "store_true", default = False,
@@ -102,7 +112,7 @@ def parse_arguments(args = sys.argv[1:]):
 
     parser = OptionParser(
         usage = "usage: %prog [options] app",
-        description = "Builds a Phial site.",
+        description = "Builds the given Phial application.",
         option_list = option_list
     )
 
