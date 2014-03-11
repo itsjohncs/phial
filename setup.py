@@ -37,11 +37,11 @@ setup(
         "Jekyll."
     ),
     license = "Apache v2.0",
-    keywords = "python packaging",
+    keywords = "python ssg",
     url = "https://www.github.com/brownhead/phial",
-    long_description = read("README.rst"),
+    long_description = "See https://www.github.com/brownhead/phial",
     install_requires = [
-        "PyYAML==3.10"
+        "PyYAML>=3.10"
     ],
     classifiers = [
         "Development Status :: 2 - Pre-Alpha",
