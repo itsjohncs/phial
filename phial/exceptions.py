@@ -1,5 +1,5 @@
-# Copyright (c) 2013 John Sullivan
-# Copyright (c) 2013 Other contributers as noted in the CONTRIBUTERS file
+# Copyright (c) 2013-2014 John Sullivan
+# Copyright (c) 2013-2014 Other contributers as noted in the CONTRIBUTERS file
 #
 # This file is part of Phial
 #
