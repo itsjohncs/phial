@@ -1,17 +1,19 @@
 # stdlib
-import logging
-import imp
-import sys
-import hashlib
-import os
-import stat
-import time
-import itertools
-import glob
-import multiprocessing
-import BaseHTTPServer
-import SimpleHTTPServer
 from optparse import OptionParser, make_option
+import BaseHTTPServer
+import glob
+import hashlib
+import imp
+import itertools
+import logging
+import multiprocessing
+import os
+import shutil
+import SimpleHTTPServer
+import stat
+import sys
+import time
+import tempfile
 
 # internal
 from . import processor
@@ -310,24 +312,37 @@ def fork_and_serve(public_dir, host, port, verbose):
 def main(args = sys.argv[1:]):
     options, arguments = parse_arguments(args)
 
+    deletion_list = []
+
     try:
-        _main(options, arguments)
+        _main(options, arguments, deletion_list)
     except KeyboardInterrupt:
         log.info("User sent interrupt, exiting.", exc_info = options.verbose)
         sys.exit(1)
+    finally:
+        if deletion_list:
+            log.info("Removing files/directories %r.", deletion_list)
+            for i in deletion_list:
+                shutil.rmtree(i)
 
 def run_tool(*args):
     """Runs the Phial command line tool with the given arguments."""
 
     main(args)
 
-def _main(options, arguments):
+def _main(options, arguments, deletion_list):
     app_path = arguments[0]
 
     setup_logging(options.verbose)
 
     log.debug("Parsed command line arguments. arguments = %r, options = %r.",
         arguments, vars(options))
+
+    if options.output == ":temp:":
+        temp_dir = tempfile.mkdtemp()
+        deletion_list.append(temp_dir)
+        log.info("Created temporary directory at %r.", temp_dir)
+        options.output = temp_dir
 
     watch_list = list(options.watch_list)
     dont_watch_list = list(options.dont_watch_list)
