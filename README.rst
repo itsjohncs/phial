@@ -1,6 +1,8 @@
 Phial
 =====
 
+**The code in this README does not necessarily work yet, this is how I want Phial to work, not how it already works.**
+
 Phial is a static site generator for Python developers.
 
 .. code-block:: python
