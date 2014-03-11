@@ -15,6 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# These are the only symbols that will be imported when
+# `from documents import *` is used.
+__all__ = ["open_file", "parse_document", "Document"]
+
 # stdlib
 import StringIO
 import codecs

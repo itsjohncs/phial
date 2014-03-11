@@ -15,6 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# These are the only symbols that will be imported when `from pages import *`
+# is used.
+__all__ = ["register_page", "register_assets", "register_simple_assets",
+    "page", "RenderedPage", "ResolvedAsset"]
+
 # internal
 from . import exceptions
 from . import documents
