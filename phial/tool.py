@@ -302,7 +302,7 @@ def fork_and_serve(public_dir, host, port, verbose):
         except KeyboardInterrupt:
             pass
 
-    log.debug("Starting server on host %r port %r.", host, port)
+    log.info("Starting server on host %r port %r.", host, port)
     p = multiprocessing.Process(target = serve)
     p.daemon = True
     p.start()
@@ -353,9 +353,19 @@ def _main(options, arguments):
     callback()
 
     if options.serve:
+        # This will fork off a web server and return immediately
         fork_and_serve(options.output, options.serve_host,
             int(options.serve_port), options.verbose)
 
     if options.monitor:
+        # This function never returns
         monitor(watch_list, dont_watch_list,
             float(options.watch_poll_frequency), callback)
+
+    # If the user wants to serve the site but didn't enable monitoring we'd
+    # exit immediately if we didn't do this.
+    if options.serve:
+        # Sleep forever (until keybaord interrupt)
+        log.debug("Sleeping forever.")
+        while True:
+            time.sleep(1)
