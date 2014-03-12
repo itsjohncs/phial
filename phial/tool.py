@@ -160,6 +160,30 @@ def parse_arguments(args = sys.argv[1:]):
             "a security issue. Defaults to %default."
     )
 
+    index_options = OptionGroup(parser, "Phial Index Options",
+        "Phial will automatically delete any old files from the output "
+        "directory. It needs to know which files it created in order to do "
+        "that without destroying any other important files though. It does "
+        "this by storing an index file. These options control the creation "
+        "of that index file."
+    )
+    parser.add_option_group(index_options)
+    index_options.add_option(
+        "--index-path", action = "store", default = ".phial_index",
+        dest = "index_path", metavar = "PATH",
+        help =
+            "Where to store the index file. This is a path relative to the "
+            "output directory (though it can also be an absolute path). "
+            "Defaults to %default."
+    )
+    index_options.add_option(
+        "--no-index", action = "store_const", const = None,
+        dest = "index_path",
+        help =
+            "If specified, no index file will be created and Phial will not "
+            "clean the output directory."
+    )
+
     options, args = parser.parse_args(args)
 
     if len(args) < 1:
@@ -288,7 +312,7 @@ def monitor(watch_list, dont_watch_list, wait_time, callback):
 
         callback()
 
-def build_app(app_path, source_dir, output_dir):
+def build_app(app_path, source_dir, output_dir, index_path):
     """
     Builds the app. Will import the application in the current process so the
     forking verision of this function is probably what you want.
@@ -306,7 +330,7 @@ def build_app(app_path, source_dir, output_dir):
         log.info("Building application from sources in %r to output "
             "directory %r.", source_dir, output_dir)
         processor.process(source_dir = source_dir,
-            output_dir = output_dir)
+            output_dir = output_dir, index_path = index_path)
     except:
         log.warning("Failed to build app.", exc_info = True)
 
@@ -414,7 +438,7 @@ def _main(options, arguments, deletion_list):
 
     # We'll pass this callback function to our monitor routine
     callback = lambda: fork_and_build_app(app_path, options.source,
-        options.output)
+        options.output, options.index_path)
 
     # Build the app before we go into monitor mode, also takes care of building
     # it if we're not going into monitor mode at all.

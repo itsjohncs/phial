@@ -87,7 +87,7 @@ def clean_output_dir(output_dir, index_path):
     try:
         f = open(index_path)
     except IOError as e:
-        log.info("Could not open Phial index at %r: %r", index_path, e)
+        log.debug("Could not open Phial index at %r: %r", index_path, e)
         return
 
     # Canonicalize the output directory
