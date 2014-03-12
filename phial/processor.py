@@ -48,46 +48,128 @@ def process(source_dir = "./site", output_dir = "./output"):
 
     """
 
+    # Render the entire site and generate a list of RenderedPage and
+    # ResolvedAsset objects. The file system will not be affected by this call.
+    artifacts = render_site(source_dir)
+
+    # Figure out the actual paths on the filesystem each RenderedPage and
+    # ResolvedAsset object deals with. This will also raise an exception if
+    # any relative file paths try to jump out of the source or output
+    # directories.
+    finalize_paths(artifacts, source_dir, output_dir)
+
+    # Actually output the site. After this call exits the entire site will have
+    # been given to the filesystem.
+    output_site(artifacts)
+
+def render_site(source_dir):
+    """
+    Calls the page functions of all registered pages as well as resolving all
+    of the registered assets.
+
+    :param source_dir: The source directory to change into.
+
+    :returns: A list of artifacts (RenderedPage and ResolvedAsset objects).
+
+    .. warning::
+
+        This function changes the current directory using ``os.chdir()``. Be
+        wary of using this function in a multi-threaded application. It changes
+        it back to its previous value right before the function returns.
+
+    """
+
     # We want all of the relative paths in the user's code to be relative to
     # the source directory, so we're actually going to modify our current
     # directory process-wide.
     old_cwd = os.getcwd()
     os.chdir(source_dir)
-    log.debug("Changed into source directory %r.", source_dir)
 
-    results = []
+    artifacts = []
 
     # Go through every page we know about and process each one
     for i in pages._pages:
-        results += process_page(i)
+        artifacts += render_page(i)
 
     # Go through every asset and process each one
     for i in pages._assets:
-        results += process_asset(i)
+        artifacts += resolve_asset(i)
 
-    # During the output step, we reset the current directory back to whatever
-    # it was to begin with.
+    # Reset it back so we don't mess anything up
     os.chdir(old_cwd)
 
-    # Spill out the rendered pages into the output directory
-    for i in results:
-        destination = os.path.join(output_dir, i.target)
-        if not os.path.abspath(destination).startswith(
-                os.path.abspath(output_dir)):
-            raise ValueError("destination path is invalid: {}".format(
-                destination))
+    return artifacts
 
+def finalize_paths(artifacts, source_dir, output_dir):
+    """
+    Figures out exactly where on the filesystem the artifacts' targets and
+    sources (if applicable) are located.
+
+    :param artifacts: A list of artifacts to look at. This list will be
+            modified in place and each artifact will have appropriate
+            ``_target_path`` and ``_source_path`` attributes set.
+    :param source_dir: The source directory as provided by the user.
+    :param output_dir: The output directory as provided by the user.
+
+    :returns: None
+
+    """
+
+    # Make the output and source directories canonical
+    source_dir = os.path.abspath(source_dir)
+    output_dir = os.path.abspath(output_dir)
+
+    # Go through every artifact and make sure that its target and source (if
+    # applicable) are valid.
+    for i in artifacts:
+        # Figure out exactly where on the filesystem we're going to put the
+        # artifact.
+        i._target_path = os.path.abspath(
+            os.path.join(output_dir, i.target))
+
+        # This will ensure that the final destination of this artifact is not
+        # outside of the output directory.
+        if not i._target_path.startswith(output_dir):
+            log.error("Artifact's target is outside of the output "
+                "directory: %r", i)
+            raise RuntimeError("Artifact target is outside output directory.")
+
+        # Do the same for the source if this is an asset
+        if isinstance(i, pages.ResolvedAsset):
+            i._source_path = os.path.abspath(
+                os.path.join(source_dir, i.source))
+
+            # This will ensure that the source of this artifact is not outside
+            # of the source directory.
+            if not i._source_path.startswith(source_dir):
+                log.error("Artifact's source is outside of source "
+                    "directory: %r", i)
+                raise RuntimeError("Artifact source is outside source "
+                    "directory.")
+
+def output_site(artifacts):
+    """
+    Outputs the site.
+
+    :param artifacts: A list of artifacts that have already been sent through
+            finalize_paths().
+
+    :returns: None
+
+    """
+
+    for i in artifacts:
         # Make sure the destination's directory exists
-        _mkdirs(os.path.dirname(destination))
+        _mkdirs(os.path.dirname(i._target_path))
 
         if isinstance(i, pages.RenderedPage):
-            with open(destination, "w") as f:
+            with open(i._target_path, "w") as f:
                 if isinstance(i.content, unicode):
                     f.write(i.content.encode("utf_8"))
                 else:
                     f.write(i.content)
         else: # it's a ResolvedAsset
-            shutil.copy(os.path.join(source_dir, i.target), destination)
+            shutil.copy(i._source_path, i._target_path)
 
 def _resolve_target(raw_target, source):
     """
@@ -126,8 +208,15 @@ def _resolve_target(raw_target, source):
 
 def _resolve_result(result, page, source):
     """
-    Transforms a result as returned by a page function and transforms it
-    into an appropriate RenderedPage or ResolvedAsset object.
+    Takes a result as returned by a page function and transforms it into an
+    appropriate RenderedPage or ResolvedAsset object.
+
+    :param result: The return value of a page function.
+    :param page: The page object housing that page function.
+    :param source: The source provided to the page function. May be ``None``
+            to imply that a source was not provided.
+
+    :returns: A RenderedPage or ResolvedAsset object.
 
     """
 
@@ -157,10 +246,11 @@ def _resolve_result(result, page, source):
 
     return result
 
-def process_page(page):
+def render_page(page):
     """
-    Processes a single page and returns a list of RenderedPage and/or
-    ResolvedAsset objects.
+    Renders a single page.
+
+    :returns: A list of RenderedPage and/or ResolvedAsset objects.
 
     """
 
@@ -214,7 +304,14 @@ def process_page(page):
 
     return results
 
-def process_asset(asset):
+def resolve_asset(asset):
+    """
+    Resolves a single asset.
+
+    :returns: A list of ResolvedAsset objects.
+
+    """
+
     results = []
     for path in utils.glob_files(asset.files):
         resolved = pages.ResolvedAsset(target = None, source = path)
