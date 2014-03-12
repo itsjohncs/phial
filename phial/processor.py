@@ -22,10 +22,11 @@ from . import documents
 from . import utils
 
 # stdlib
-import os
 import errno
-import shutil
 import inspect
+import os
+import shutil
+import stat
 
 # set up logging
 import logging
@@ -40,7 +41,8 @@ def _mkdirs(dir_path):
         if e.errno != errno.EEXIST:
             raise
 
-def process(source_dir = "./site", output_dir = "./output"):
+def process(source_dir = "./site", output_dir = "./output",
+        index_path = ".phial_index"):
     """
     Processes all of the pages in your site appropriately. This is the function
     the drives the generation of a Phial site and is what is run when you use
@@ -58,9 +60,80 @@ def process(source_dir = "./site", output_dir = "./output"):
     # directories.
     finalize_paths(artifacts, source_dir, output_dir)
 
+    if index_path is not None:
+        index_path = os.path.join(output_dir, index_path)
+        clean_output_dir(output_dir, index_path)
+
     # Actually output the site. After this call exits the entire site will have
     # been given to the filesystem.
     output_site(artifacts)
+
+    if index_path is not None:
+        write_index(artifacts, output_dir, index_path)
+
+def write_index(artifacts, output_dir, index_path):
+    with open(index_path, "w") as f:
+        for i in artifacts:
+            # Write the target's path to the index (relative to the output
+            # directory).
+            print >> f, os.path.relpath(i._target_path, output_dir)
+
+def clean_output_dir(output_dir, index_path):
+    # Make a list of old files
+    old_files = []
+
+    # I don't embed the open in the with structure before because the nesting
+    # looks super unpleasent.
+    try:
+        f = open(index_path)
+    except IOError as e:
+        log.info("Could not open Phial index at %r: %r", index_path, e)
+        return
+
+    # Canonicalize the output directory
+    output_dir = os.path.abspath(output_dir)
+
+    with f:
+        for i in f:
+            # Strip any whitespace (there should be a trailing newline)
+            i = i.strip()
+
+            # Figure out the actual path of the entry
+            path = os.path.join(output_dir, i)
+
+            # Ensure that the path given is not outside of the output
+            # directory.
+            if not os.path.abspath(path).startswith(output_dir):
+                raise RuntimeError("invalid path in index: {!r}".format(i))
+
+            try:
+                mode = os.stat(path).st_mode
+            except OSError as e:
+                if e.errno == errno.ENOENT:
+                    log.warning("Entry in Phial index does not exist: %r",
+                        os.path.relpath(path))
+                    continue
+
+            if stat.S_ISREG(mode):
+                old_files.append(path)
+
+    old_directories = set()
+    for i in old_files:
+        # Keep track of the directories these were in, we'll delete the
+        # directories afterwards if they're empty.
+        old_directories.add(os.path.dirname(i))
+
+        os.remove(i)
+
+    for i in old_directories:
+        try:
+            os.removedirs(i)
+        except OSError:
+            pass
+
+    log.debug("Cleaned output directory. Deleted files %r. Deleted "
+        "directories %r.", [os.path.relpath(i) for i in old_files],
+        [os.path.relpath(i) for i in old_directories])
 
 def render_site(source_dir):
     """
