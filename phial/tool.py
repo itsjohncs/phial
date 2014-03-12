@@ -47,9 +47,10 @@ def parse_arguments(args = sys.argv[1:]):
     )
 
     parser.add_option(
-        "-s", "--source", action = "store", default = "./site",
+        "-s", "--source", action = "store", default = None,
         help =
-            "The directory the source files are in. Defaults to %default."
+            "The directory the source files are in. Defaults to ./site if it "
+            "exists, otherwise it defaults to your current directory."
     )
     parser.add_option(
         "-o", "--output", action = "store", default = "./output",
@@ -381,6 +382,12 @@ def _main(options, arguments, deletion_list):
 
     log.debug("Parsed command line arguments. arguments = %r, options = %r.",
         arguments, vars(options))
+
+    if options.source is None:
+        if os.path.isdir("./site"):
+            options.source = "./site"
+        else:
+            options.source = "."
 
     if options.output == ":temp:":
         temp_dir = tempfile.mkdtemp()
