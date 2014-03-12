@@ -25,6 +25,7 @@ from . import utils
 import os
 import errno
 import shutil
+import inspect
 
 # set up logging
 import logging
@@ -88,7 +89,7 @@ def process(source_dir = "./site", output_dir = "./output"):
         else: # it's a ResolvedAsset
             shutil.copy(os.path.join(source_dir, i.target), destination)
 
-def resolve_target(raw_target, source):
+def _resolve_target(raw_target, source):
     """
     Resolves a target string with the provided source.
 
@@ -137,7 +138,7 @@ def _resolve_result(result, page, source):
     # If the user didn't explictly provide a target in their return value,
     # and there the page has a target listed...
     if result.target is None and page.target is not None:
-        result.target = resolve_target(page.target, source)
+        result.target = _resolve_target(page.target, source)
 
     # If no path is provided by the user but we have a source, we default
     # to using the source's path as the target path as well.
@@ -163,10 +164,27 @@ def process_page(page):
 
     """
 
+    # Figure out which parameters the page function supports. See issue #5 for
+    # more information on why we do this.
+    argspec = inspect.getargspec(page.func)
+    arguments = set(argspec.args)
+    def filter_args(dictionary):
+        """Returns a dictionary containing only keys in ``arguments``."""
+
+        # Include everything is they have a catchall **kwargs
+        if argspec.keywords is not None:
+            return dictionary
+
+        return dict(i for i in dictionary.items() if i[0] in arguments)
+
     results = []
     if page.files is None:
-        # The page doesn't expect any files so just call it without arguments
-        result = page.func()
+        potential_args = {
+            "self": page,
+            "target": page.target
+        }
+
+        result = page.func(**filter_args(potential_args))
 
         result = _resolve_result(result, page, None)
         results.append(result)
@@ -179,8 +197,14 @@ def process_page(page):
             else:
                 source = path
 
+            potential_args = {
+                "self": page,
+                "source": source,
+                "target": _resolve_target(page.target, source)
+            }
+
             # Execute the page function and get whatever the user returns
-            result = page.func(source)
+            result = page.func(**filter_args(potential_args))
 
             if result is None:
                 continue
