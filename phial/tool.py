@@ -16,7 +16,7 @@
 # limitations under the License.,
 
 # stdlib
-from optparse import OptionParser, make_option
+from optparse import OptionParser, OptionGroup, make_option
 import BaseHTTPServer
 import glob
 import hashlib
@@ -38,99 +38,125 @@ from . import processor
 log = logging.getLogger(__name__)
 
 def parse_arguments(args = sys.argv[1:]):
+    parser = OptionParser(
+        usage = "usage: %prog [options] app",
+        description =
+            "The Phial command line tool. See "
+            "http://github.com/brownhead/phial for more information on the "
+            "project.",
+    )
+
+    parser.add_option(
+        "-s", "--source", action = "store", default = "./site",
+        help =
+            "The directory the source files are in. Defaults to %default."
+    )
+    parser.add_option(
+        "-o", "--output", action = "store", default = "./output",
+        help =
+            "The directory to build the site into (it will be created if "
+            "it does not exist). The special value :temp: may be provided, "
+            "in which case a temporary directory will be used (it is "
+            "destroyed when Phial exits). Defaults to %default."
+    )
+    parser.add_option(
+        "-v", "--verbose", action = "store_true", default = False,
+        help =
+            "If specified, DEBUG messages will be printed and more "
+            "information will be printed with each log message."
+    )
+
+    # optparse doesn't have native support for aliases so we use a callback
+    # here.
     def testing_callback(option, opt, value, parser):
         parser.values.output = ":temp:"
         parser.values.serve = True
         parser.values.monitor = True
+    parser.add_option(
+        "-t", "--testing", action = "callback",
+        callback = testing_callback,
+        help = "Alias for: '--output :temp: --serve --monitor'."
+    )
 
-    option_list = [
-        make_option(
-            "-t", "--testing", action = "callback",
-            callback = testing_callback,
-            help = "Alias for: '--output :temp: --serve --monitor'."
-        ),
-        make_option(
-            "-o", "--output", action = "store", default = "./output",
-            help =
-                "The directory to build the site into (it will be created if "
-                "it does not exist). Defaults to %default."
-        ),
-        make_option(
-            "-s", "--source", action = "store", default = "./site",
-            help =
-                "The directory the source files are in. Defaults to %default."
-        ),
-        make_option(
-            "-v", "--verbose", action = "store_true", default = False,
-            help = "If specified, DEBUG messages will be printed."
-        ),
-        make_option(
-            "-m", "--monitor", action = "store_true", default = False,
-            help =
-                "If specified, the site will be rebuilt every time a change "
-                "is made to a file or directory in the watch list."
-        ),
-        make_option(
-            "-w", "--watch", action = "append", dest = "watch_list",
-            default = [],
-            help =
-                "Adds a file or directory to the watch list. The path "
-                "provided will be globbed every time the list is checked. By "
-                "default, the watch list will be populated with the source "
-                "directory as well as all of the unhidden files and "
-                "directories in the app script's directory. This default "
-                "behavior can be disabled with --no-watch-defaults."
-        ),
-        make_option(
-            "-W", "--dont-watch", action = "append", dest = "dont_watch_list",
-            default = [],
-            help =
-                "Adds a file or directory to the don't watch list. The path "
-                "provided will be globbed every time the list is checked. "
-                "If a file or directory exists in both the watch list and the "
-                "don't watch list, it will not be watched. By default, the "
-                "output directory will be in the unwatch list. This default "
-                "behavior can be disabled with --no-watch-defaults."
-        ),
-        make_option(
-            "--no-watch-defaults", action = "store_false", default = True,
-            dest = "watch_defaults",
-            help =
-                "Do not populate the watch list or the don't-watch list with "
-                "the default items"
-        ),
-        make_option(
-            "--watch-poll-frequency", action = "store", default = "1",
-            help =
-                "The amount of time to wait in between polling for changes. "
-                "Measured in seconds (can be a floating point value). "
-                "Defaults to %default."
-        ),
-        make_option(
-            "--serve", action = "store_true", default = False,
-            help =
-                "If sepcified, the built site will be served by a built-in "
-                "HTTP server."
-        ),
-        make_option(
-            "--serve-port", action = "store", default = "9000",
-            help = "The TCP port to serve requests on. Defaults to %default."
-        ),
-        make_option(
-            "--serve-host", action = "store", default = "localhost",
-            help =
-                "The host to serve requests on. This will determine the "
-                "network device that is listened to. You almost certainly "
-                "want to leave this on the default setting as exposing the "
-                "server publicly using the built-in HTTP server could cause "
-                "a security issue. Defaults to %default."
-        )
-    ]
+    monitor_options = OptionGroup(parser, "Monitor Mode Options",
+        "Phial can monitor a set of files for you and trigger a build every "
+        "time one of the files is updated. This can be very useful when "
+        "editing your site. These options control the details of this mode."
+    )
+    parser.add_option_group(monitor_options)
+    monitor_options.add_option(
+        "-m", "--monitor", action = "store_true", default = False,
+        help =
+            "If specified, the site will be rebuilt every time a change "
+            "is made to a file or directory in the watch list."
+    )
+    monitor_options.add_option(
+        "-w", "--watch", action = "append", dest = "watch_list",
+        metavar = "PATH",
+        default = [],
+        help =
+            "Adds a file or directory to the watch list. The path "
+            "provided will be globbed every time the list is checked. By "
+            "default, the watch list will be populated with the source "
+            "directory as well as all of the unhidden files and "
+            "directories in the app script's directory. This default "
+            "behavior can be disabled with --no-watch-defaults."
+    )
+    monitor_options.add_option(
+        "-W", "--dont-watch", action = "append", dest = "dont_watch_list",
+        metavar = "PATH",
+        default = [],
+        help =
+            "Adds a file or directory to the don't-watch list. The path "
+            "provided will be globbed every time the list is checked. "
+            "If a file or directory exists in both the watch list and the "
+            "don't-watch list, it will not be watched. By default, the "
+            "output directory will be in th don't-watch list. This default "
+            "behavior can be disabled with --no-watch-defaults. This "
+            "option exists because if your site generates some files into a "
+            "directory in the watch list Phial can get caught in a loop where "
+            "it will continually build your site over and over again."
+    )
+    monitor_options.add_option(
+        "--no-watch-defaults", action = "store_false", default = True,
+        dest = "watch_defaults",
+        help =
+            "Do not populate the watch list or the don't-watch list with "
+            "the default items."
+    )
+    monitor_options.add_option(
+        "--watch-poll-frequency", action = "store", default = "1",
+        help =
+            "The amount of time to wait in between polling for changes. "
+            "Measured in seconds (can be a floating point value). "
+            "Defaults to %default."
+    )
 
-    parser = OptionParser(
-        usage = "usage: %prog [options] app",
-        description = "Builds the given Phial application.",
-        option_list = option_list
+    server_options = OptionGroup(parser, "Serve Mode Options",
+        "Phial can serve your site on your local system. Enabling serve mode "
+        "is very similar to running 'python -m SimpleHTTPServer' in the "
+        "output directory."
+    )
+    parser.add_option_group(server_options)
+    server_options.add_option(
+        "--serve", action = "store_true", default = False,
+        help =
+            "If sepcified, the built site will be served by a built-in "
+            "HTTP server."
+    )
+    server_options.add_option(
+        "--serve-port", action = "store", default = "9000", metavar = "PORT",
+        help = "The TCP port to serve requests on. Defaults to %default."
+    )
+    server_options.add_option(
+        "--serve-host", action = "store", default = "localhost",
+        metavar = "HOST",
+        help =
+            "The host to serve requests on. This will determine the "
+            "network device that is listened to. You almost certainly "
+            "want to leave this on the default setting as exposing the "
+            "server publicly using the built-in HTTP server could cause "
+            "a security issue. Defaults to %default."
     )
 
     options, args = parser.parse_args(args)
