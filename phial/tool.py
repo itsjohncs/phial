@@ -342,9 +342,11 @@ def fork_and_serve(public_dir, host, port, verbose):
 
     def serve():
         try:
+            sys.stdout = open(os.devnull, "w")
+            sys.stderr = open(os.devnull, "w")
+
             os.chdir(public_dir)
             server = BaseHTTPServer.HTTPServer((host, port), RequestHandler)
-            server.log_message = log.debug
             server.serve_forever()
         except KeyboardInterrupt:
             pass
