@@ -30,14 +30,19 @@ import yaml
 # internal
 from . import exceptions
 
-# We need to get PyYAML to use the Python unicode object to store any strings
-# present in the YAML. Therefore we override the default handling of YAML
-# strings here. The default handling will return a str if every character is
-# a valid ASCII character.
-yaml.SafeLoader.add_constructor(
-    u"tag:yaml.org,2002:str",
-    lambda loader, node: loader.construct_scalar(node)
-)
+class UnicodeSafeLoader(yaml.SafeLoader):
+    """YAML loader that uses unicode rather than str.
+
+    We need to get PyYAML to use the Python unicode object to store any strings
+    present in the YAML. Therefore we override the default handling of YAML
+    strings here. The default handling will return a str if every character is
+    a valid ASCII character.
+    """
+
+    yaml_constructors = {
+        u"tag:yaml.org,2002:str":
+            lambda loader, node: loader.construct_scalar(node)
+    }
 
 def open_file(path):
     """
@@ -108,7 +113,8 @@ def parse_document(document_file):
         document_file.seek(0)
         return (None, document_file.read())
 
-    decoded_front_matter = yaml.safe_load(front_matter.getvalue())
+    decoded_front_matter = yaml.load(
+        front_matter.getvalue(), UnicodeSafeLoader)
 
     # The rest of the file is the content. Note that we have to do multiple reads
     # here. Not entirely sure why yet but I suspect an internal buffer used by
