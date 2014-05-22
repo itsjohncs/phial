@@ -48,3 +48,7 @@ docs/_build/
 
 # Virtual Environments
 venv*/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
