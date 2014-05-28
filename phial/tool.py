@@ -308,7 +308,7 @@ def monitor(watch_list, dont_watch_list, wait_time, callback):
                 break
         old_token = current_token
 
-        log.info("Detected change in watch list.")
+        log.info("Detected change in source files, rebuilding...")
 
         callback()
 
