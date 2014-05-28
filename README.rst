@@ -1,11 +1,11 @@
 Phial
 =====
 
-**The code in this README does not necessarily work yet, this is how I want Phial to work, not how it already works.**
-
-Phial is a static site generator for Python developers.
+Phial is a simple Python library for building static sites.
 
 .. code-block:: python
+
+    # hello.py
 
     from phial import page
 
@@ -18,29 +18,40 @@ Phial is a static site generator for Python developers.
     $ pip install phial
     $ phial --testing hello.py # Serves at http://localhost:9000
 
-What's Inluded?
----------------
+Phial is Unopiniated
+--------------------
 
-Phial is unopiniated. Its small feature set includes:
+Its small feature set includes:
 
 * YAML frontmatter parsing
 * UTF-8 and UTF-16 file support (unicode supported throughout)
 * Built-in development server
+* Automatic reloading
 * Sensible API
+* Lots of love
 
-It does not (and never will) include:
+Its small feature set does not, and never will include:
 
 * Any template engine
 * An opinion on how you structure your site
-* "Magical" features
+* Magical, hard to understand features
 * A huge list of dependencies
+
+Phial is made for Python Developers
+-----------------------------------
+
+I'm tired of SSG's that use extremely heavy, and extremely leaky, abstractions.
+
+When I make a static site I want to have absolute control over everything without having to dive into the internals of some crazy plugin system. At the same time, I don't want to have to reinvent a ton of simple, convenient things like automatic reloading or running a dev server.
+
+Phial is my solution to this frustration. Let me know what you think.
 
 Quick Walkthrough
 -----------------
 
-As you saw above, it's certainly possible to make a Phial site that doesn't use any source files (ie: templates, documents, images, etc). Most of the time this isn't what you want though.
+As you saw in the short snippet above, it's certainly possible to make a Phial site that doesn't use any source files (ie: templates, documents, images, etc). Most of the time this isn't what you want though.
 
-Here is a slightly more developed example. For the full site including the source files see `here <http://google.com>`_.
+Here is a slightly more developed example.
 
 .. code-block:: python
 
@@ -71,5 +82,7 @@ I avoided using any external templating or rendering engines in this example, bu
 
 Sites Using Phial
 -----------------
+
+If you want to see even more developed examples, check out these sites! There's only one right now but it would be awfully nice if there were more... (nudge nudge)
 
 * `johncs.com <http://johncs.com>`_ (`source <https://github.com/brownhead/johncs.com>`_)
