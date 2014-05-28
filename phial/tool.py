@@ -321,7 +321,9 @@ def build_app(app_path, source_dir, output_dir, index_path):
 
     # Try and import the user's application
     try:
-        userapp = imp.load_source("userapp", app_path)
+        # If we don't use the absolute path when importing we may not get
+        # proper tracebacks if the current directory changes.
+        userapp = imp.load_source("userapp", os.path.abspath(app_path))
     except:
         log.error("Could not load app at %r.", app_path, exc_info = True)
         sys.exit(100)
