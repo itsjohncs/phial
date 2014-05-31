@@ -48,6 +48,11 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License"
     ],
+    entry_points = {
+        "console_scripts": [
+            "phial = phial.tool:main"
+        ]
+    },
     # This ensures that the MANIFEST.IN file is used for both binary and source
     # distributions.
     include_package_data = True,
