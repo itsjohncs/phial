@@ -61,10 +61,11 @@ def parse_arguments(args = sys.argv[1:]):
             "destroyed when Phial exits). Defaults to %default."
     )
     parser.add_option(
-        "-v", "--verbose", action = "store_true", default = False,
+        "-v", "--verbose", action = "count", default = 0,
         help =
-            "If specified, DEBUG messages will be printed and more "
-            "information will be printed with each log message."
+            "Raises the verbosity. -v enables info level messages, -vv "
+            "enables debug level messages. By default, only errors and "
+            "warnings are displayed."
     )
 
     # optparse doesn't have native support for aliases so we use a callback
@@ -112,7 +113,7 @@ def parse_arguments(args = sys.argv[1:]):
             "provided will be globbed every time the list is checked. "
             "If a file or directory exists in both the watch list and the "
             "don't-watch list, it will not be watched. By default, the "
-            "output directory will be in th don't-watch list. This default "
+            "output directory will be in the don't-watch list. This default "
             "behavior can be disabled with --no-watch-defaults. This "
             "option exists because if your site generates some files into a "
             "directory in the watch list Phial can get caught in a loop where "
@@ -142,7 +143,7 @@ def parse_arguments(args = sys.argv[1:]):
     server_options.add_option(
         "--serve", action = "store_true", default = False,
         help =
-            "If sepcified, the built site will be served by a built-in "
+            "If specified, the built site will be served by a built-in "
             "HTTP server."
     )
     server_options.add_option(
@@ -194,16 +195,26 @@ def parse_arguments(args = sys.argv[1:]):
     return (options, args)
 
 def setup_logging(verbose):
-    if verbose:
+    if verbose >= 2:
         log_level = logging.DEBUG
+    elif verbose == 1:
+        log_level = logging.INFO
+    else:
+        log_level = logging.WARNING
+
+
+    if log_level == logging.DEBUG:
         format = ("[%(name)15s:%(lineno)3s - %(funcName)20s] %(levelname)5s "
             "- %(message)s")
     else:
-        log_level = logging.INFO
         format  = "%(levelname)s - %(message)s"
 
 
     logging.basicConfig(level = log_level, format = format)
+
+    # We have to wait for the logger to be initialized to log this
+    if verbose > 2:
+        logging.warning("`-v` or `--verbose` specified more than 2 times.")
 
 def get_state_token(dir_paths, exceptions):
     """
