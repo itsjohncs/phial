@@ -388,7 +388,9 @@ def fork_and_serve(public_dir, host, port, verbose):
         except KeyboardInterrupt:
             pass
 
-    log.info("Starting server at http://%s:%s", host, port)
+    # Print to stdout to ensure the user always recieves this message (without
+    # doing anything too clunky like logging an error).
+    print "Serving site at http://{}:{}".format(host, port)
     p = multiprocessing.Process(target = serve)
     p.daemon = True
     p.start()
