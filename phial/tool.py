@@ -414,7 +414,7 @@ def main(args = sys.argv[1:]):
 def run_tool(*args):
     """Runs the Phial command line tool with the given arguments."""
 
-    main(args)
+    main(list(args))
 
 def _main(options, arguments, deletion_list):
     app_path = arguments[0]
