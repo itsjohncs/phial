@@ -32,7 +32,6 @@ UNICODE_TEST_PONY = (
     u"\u0310Y\u0321"
 )
 
-# A list of sample pages we will use to test our sample parser.
 SAMPLE_FILES = [
     {
         # The raw text of the file. This is using the automatic string
@@ -65,8 +64,8 @@ SAMPLE_FILES = [
     }
 ]
 
+# Each encoding is a tuple of (write_encoding, BOM, read_encoding)
 TEST_ENCODINGS = [
-    # (write_encoding, BOM, read_encoding)
     ("utf_8", "", "utf_8"),
     ("utf_8_sig", "", "utf_8_sig"),
     ("utf_16", "", "utf_16"),
