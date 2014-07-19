@@ -35,7 +35,7 @@ def recursive_compare(dir1, dir2):
     def get_all_files(dir_path):
         for root, dirs, files in os.walk(dir_path):
             for name in files + dirs:
-                yield name
+                yield os.path.relpath(os.path.join(root, name), dir_path)
 
     dir1_files = set(get_all_files(dir1))
     dir2_files = set(get_all_files(dir2))
@@ -44,10 +44,17 @@ def recursive_compare(dir1, dir2):
         return False
 
     common = dir1_files.intersection(dir2_files)
-    for i in filter(os.path.isdir, common):
-        a = open(os.path.join(dir1, i)).read()
-        b = open(os.path.join(dir2, i)).read()
-        if a != b:
+    for i in common:
+        path1 = os.path.join(dir1, i)
+        path2 = os.path.join(dir2, i)
+
+        isdir1 = os.path.isdir(path1)
+        isdir2 = os.path.isdir(path2)
+        if isdir1 != isdir2:
+            return False
+
+        if (not isdir1 and not isdir2 and
+                open(path1).read() != open(path2).read()):
             return False
 
     return True
