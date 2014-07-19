@@ -44,7 +44,7 @@ def recursive_compare(dir1, dir2):
         return False
 
     common = dir1_files.intersection(dir2_files)
-    for i in common:
+    for i in filter(os.path.isdir, common):
         a = open(os.path.join(dir1, i)).read()
         b = open(os.path.join(dir2, i)).read()
         if a != b:
