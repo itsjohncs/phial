@@ -48,19 +48,19 @@ SAMPLE_FILES = [
         # The frontmatter the parser *should* pull out from the document above
         "frontmatter": {u"key1": u"value1", u"key2": u"value2"},
 
-        # The body of the file the parser *should* pull out (the body is
+        # The content of the file the parser *should* pull out (the content is
         # everything but the frontmatter)
-        "body": u"\nDestruction."
+        "content": u"\nDestruction."
     },
     {
         "raw": u"",
         "frontmatter": None,
-        "body": u""
+        "content": u""
     },
     {
         "raw": UNICODE_TEST_PONY,
         "frontmatter": None,
-        "body": UNICODE_TEST_PONY
+        "content": UNICODE_TEST_PONY
     }
 ]
 
@@ -80,14 +80,12 @@ TEST_ENCODINGS = [
 class TestDocuments:
     @pytest.mark.parametrize("sample", SAMPLE_FILES)
     def test_frontmatter_parsing(self, sample):
-        """Ensure that frontmatter is parsed correctly."""
-
-        # Use a StringIO object to fake out the Documents class into thinking
-        # it's working with a real file.
         fake_file = StringIO.StringIO(sample["raw"])
 
-        f = documents.Document(fake_file)
-        assert f.frontmatter == sample["frontmatter"]
+        frontmatter, content = documents.parse_document(fake_file)
+
+        assert frontmatter == sample["frontmatter"]
+        assert content.read() == sample["content"]
 
     @pytest.mark.parametrize("encoding", TEST_ENCODINGS)
     def test_open_file(self, encoding):
@@ -99,6 +97,7 @@ class TestDocuments:
             delete_path = f.name
 
         try:
+            assert documents.detect_encoding(f.name) == encoding[2]
             with documents.open_file(f.name) as f:
                 result = f.read()
                 result_encoding = f.encoding

@@ -17,18 +17,26 @@
 
 # These are the only symbols that will be imported when
 # `from documents import *` is used.
-__all__ = ["open_file", "parse_document", "Document"]
+__all__ = [
+    "detect_encoding",
+    "Document",
+    "open_file",
+    "parse_document",
+    "unicodify_file_object",
+]
 
 # stdlib
-import StringIO
 import codecs
 import os
+import shutil
+import tempfile
 
 # external
 import yaml
 
 # internal
 from . import exceptions
+
 
 class UnicodeSafeLoader(yaml.SafeLoader):
     """YAML loader that uses unicode rather than str.
@@ -38,28 +46,30 @@ class UnicodeSafeLoader(yaml.SafeLoader):
     strings here. The default handling will return a str if every character is
     a valid ASCII character.
     """
-
     yaml_constructors = {
         u"tag:yaml.org,2002:str":
             lambda loader, node: loader.construct_scalar(node)
     }
 
-def open_file(path):
-    """
-    Open a file with the correct decoder according to the
-    `YAML 1.1 spec <http://yaml.org/spec/1.1/#id868742>`_, with the notable
-    addition of correct handling of the
+
+def detect_encoding(path):
+    """Returns encoding of file at path.
+
+    This is not a general purpose function and will not detect all encodings
+    (and in fact can only detect a few). It follows the
+    `YAML 1.1 spec <http://yaml.org/spec/1.1/#id868742>`_ with the notable
+    addition of correct hadnling of the
     `UTF-8 with BOM signature <http://en.wikipedia.org/wiki/Byte_order_mark#UTF-8>`_
     encoding.
 
-    :param path: The location of the file on the operating system. It will be
-        opened for reading only.
+    If this function cannot determine the encoding, it will return the default
+    encoding ``u"utf_8"``.
 
-    :returns: A file-like object as returned by
-        `codecs.open() <http://docs.python.org/2/library/codecs.html#codecs.open>`_.
+    :param path: Path to the file.
 
+    :returns: An encoding name (as a unicode object) from the list under
+        `Standard Encodings <https://docs.python.org/2/library/codecs.html#standard-encodings>`_.
     """
-
     DEFAULT_ENCODING = u"utf_8"
 
     BOMS = [
@@ -79,31 +89,72 @@ def open_file(path):
             file_encoding = encoding
             break
 
-    return codecs.open(path, "r", encoding = file_encoding)
+    return file_encoding
+
+
+def open_file(path, mode="r"):
+    """Opens a file with the correct encoding.
+
+    :func:`detect_encoding` will be used to determine the encoding, then the
+    file will be opened with
+    `codecs.open() <http://docs.python.org/2/library/codecs.html#codecs.open>`_.
+
+    :param path: Path to the file.
+
+    :returns: A file-like object as returned by
+        `codecs.open() <http://docs.python.org/2/library/codecs.html#codecs.open>`_.
+
+    """
+    if "b" in mode:
+        raise ValueError("Binary mode is not supported.")
+
+    return codecs.open(path, mode, encoding=detect_encoding(path))
+
+
+def unicodify_file_object(file_object):
+    """Wraps a file object to accept and emit unicode.
+
+    This is done by invisibly encoding unicode strings into UTF-8 before
+    writing, and decoding into unicode string after reading.
+
+    :param file_object: Any file-like object that accepts and emits ``str``
+        objects.
+
+    :returns: A wrapped file-like object.
+    """
+    info = codecs.lookup("utf_8")
+    return codecs.StreamReaderWriter(file_object, info.streamreader,
+                                     info.streamwriter, "strict")
+
 
 def parse_document(document_file):
-    """
+    """Parses a document's frontmatter and contents.
+
     Will parse a document into its frontmatter and content components. The
     frontmatter will be decoded with a YAML parser.
 
     :param document_file: A file-like object to consume. It must produce
-        ``unicode`` objects when read from rather than ``str``.
+        ``unicode`` objects when read from rather than ``str`` (see
+        :func:`open_file`).
 
-    :returns: A two-tuple ``(frontmatter, content)``.
+    :returns: A two-tuple ``(frontmatter, content)`` where ``frontmatter`` will
+        be whatever the YAML decoder gave us and ``content`` is a file-like
+        object containing the content.
 
     """
-
     FRONT_MATTER_END = u"..."
+    SPOOL_MAX_SIZE = 4 * 1024 * 1024 # Four mebibytes
 
     # Iterate through every line until we hit the end of the front
     # matter.
-    front_matter = StringIO.StringIO()
+    front_matter = unicodify_file_object(
+        tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_SIZE))
     for line in document_file:
         assert isinstance(line, unicode)
 
         front_matter.write(line)
 
-        # Check if this line is the end of the frontmatter, ignoring *trailing*
+        # Check if this line is the end of the frontmatter, ignoring trailing
         # white space.
         if line.rstrip() == FRONT_MATTER_END:
             break
@@ -111,26 +162,23 @@ def parse_document(document_file):
         # This occurs if we didn't break above, so we know that there was no
         # frontmatter after all.
         document_file.seek(0)
-        return (None, document_file.read())
+        return (None, document_file)
 
-    decoded_front_matter = yaml.load(
-        front_matter.getvalue(), UnicodeSafeLoader)
+    front_matter.seek(0)
+    decoded_front_matter = yaml.load(front_matter.read(),
+                                     UnicodeSafeLoader)
 
-    # The rest of the file is the content. Note that we have to do multiple reads
-    # here. Not entirely sure why yet but I suspect an internal buffer used by
-    # the file's next() function.
-    content = document_file.read()
-    while True:
-        data = document_file.read()
-        if data == "":
-            break
-        content += data
+    content_file = unicodify_file_object(
+        tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_SIZE))
 
-    return (decoded_front_matter, content)
+    shutil.copyfileobj(document_file, content_file)
+
+    content_file.seek(0)
+    return (decoded_front_matter, content_file)
+
 
 class Document:
-    """
-    A Phial document.
+    """A Phial document.
 
     :ivar file_path: If applicable, the path to the document on the filesystem,
         may be ``None``.
@@ -145,7 +193,6 @@ class Document:
         :param document: May be either a path or a file-like object.
 
         """
-
         if isinstance(document, basestring):
             self.file_path = os.path.abspath(document)
             document_file = open_file(document)

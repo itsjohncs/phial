@@ -12,7 +12,8 @@ def bio_page(source, target):
     cats.append({"target": target, "name": source.frontmatter["name"]})
 
     template = open_file("bio_template.htm").read()
-    return template.format(content = source.content, **source.frontmatter)
+    return template.format(content = source.content.read(),
+                           **source.frontmatter)
 
 @page("index.htm")
 def main_page():
