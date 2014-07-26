@@ -103,7 +103,6 @@ def open_file(path, mode="r"):
 
     :returns: A file-like object as returned by
         `codecs.open() <http://docs.python.org/2/library/codecs.html#codecs.open>`_.
-
     """
     if "b" in mode:
         raise ValueError("Binary mode is not supported.")
@@ -111,10 +110,11 @@ def open_file(path, mode="r"):
     return codecs.open(path, mode, encoding=detect_encoding(path))
 
 
-def unicodify_file_object(file_object):
+# TODO(brownhead): I don't think emit is really the right verb here.
+def unicodify_file_object(file_object, encoding="utf_8"):
     """Wraps a file object to accept and emit unicode.
 
-    This is done by invisibly encoding unicode strings into UTF-8 before
+    This is done by invisibly encoding unicode strings into ``encoding`` before
     writing, and decoding into unicode string after reading.
 
     :param file_object: Any file-like object that accepts and emits ``str``
@@ -122,7 +122,7 @@ def unicodify_file_object(file_object):
 
     :returns: A wrapped file-like object.
     """
-    info = codecs.lookup("utf_8")
+    info = codecs.lookup(encoding)
     return codecs.StreamReaderWriter(file_object, info.streamreader,
                                      info.streamwriter, "strict")
 
@@ -140,7 +140,6 @@ def parse_document(document_file):
     :returns: A two-tuple ``(frontmatter, content)`` where ``frontmatter`` will
         be whatever the YAML decoder gave us and ``content`` is a file-like
         object containing the content.
-
     """
     FRONT_MATTER_END = u"..."
     SPOOL_MAX_SIZE = 4 * 1024 * 1024 # Four mebibytes
@@ -175,29 +174,3 @@ def parse_document(document_file):
 
     content_file.seek(0)
     return (decoded_front_matter, content_file)
-
-
-class Document:
-    """A Phial document.
-
-    :ivar file_path: If applicable, the path to the document on the filesystem,
-        may be ``None``.
-    :ivar frontmatter: A dictionary containing the parsed frontmatter of the
-        document.
-    :ivar content: A unicode string containing the content of the document (which is
-        defined as everything that's not the frontmatter).
-    """
-
-    def __init__(self, document, file_path = None):
-        """
-        :param document: May be either a path or a file-like object.
-
-        """
-        if isinstance(document, basestring):
-            self.file_path = os.path.abspath(document)
-            document_file = open_file(document)
-        else:
-            self.file_path = None
-            document_file = document
-
-        self.frontmatter, self.content = parse_document(document_file)
