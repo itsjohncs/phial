@@ -17,6 +17,7 @@
 
 # stdlib
 import glob
+import os.path
 
 def glob_files(files):
     """
@@ -41,3 +42,23 @@ def glob_files(files):
         result = list(result_set)
 
     return result
+
+
+def is_path_under_directory(path, directory):
+    """Returns True if ``path`` is in ``dir``.
+
+    This operates only on paths and does not actually access the filesystem.
+    """
+    # TODO(brownhead): This might not handle unicode correctly...
+    directory = os.path.abspath(directory) + "/"
+    path = os.path.abspath(path) + "/"
+    return path.startswith(directory)
+
+
+# TODO(brownhead): Spruce this up so we just get log message with a traceback
+# included. It might be worthwhile to get fancy and cut off the last frame
+# (this one) to avoid the common confusion of the last frame being pretty
+# useless.
+def log_and_die(logging_module, *args, **kwargs): 
+    logging_module.error(*args, **kwargs)
+    raise RuntimeError()

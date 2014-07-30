@@ -18,8 +18,8 @@
 # These modules were all designed specially for importing this way by defining
 # appropriate __all__ lists and keeping their namespaces tidy. The other
 # modules in this package are not necessarily as tidy.
-from .pages import *
-from .exceptions import *
-from .documents import *
+# from .pages import *
+# from .exceptions import *
+# from .documents import *
 
-from .tool import run_tool
+# from .tool import run_tool
