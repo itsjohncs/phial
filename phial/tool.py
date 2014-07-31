@@ -16,7 +16,7 @@
 # limitations under the License.,
 
 # stdlib
-from optparse import OptionParser, OptionGroup, make_option
+from optparse import OptionParser, OptionGroup, make_option, Option
 import BaseHTTPServer
 import glob
 import hashlib
@@ -33,13 +33,18 @@ import time
 import tempfile
 
 # internal
-from . import processor
+from . import commands
 
 log = logging.getLogger(__name__)
 
 def parse_arguments(args = sys.argv[1:]):
+    class CustomOption(Option):
+        TYPES = Option.TYPES + ("path", )
+        TYPE_CHECKER = Option.TYPE_CHECKER
+        TYPE_CHECKER["path"] = lambda option, opt, value: os.path.abspath(value)
+
     parser = OptionParser(
-        usage = "usage: %prog [options] app",
+        usage = "usage: %prog [options] app", option_class=CustomOption,
         description =
             "The Phial command line tool. See "
             "http://github.com/brownhead/phial for more information on the "
@@ -47,18 +52,26 @@ def parse_arguments(args = sys.argv[1:]):
     )
 
     parser.add_option(
-        "-s", "--source", action = "store", default = None,
+        "-s", "--source", action = "store", default = None, metavar = "PATH",
+        type = "path",
         help =
             "The directory the source files are in. Defaults to ./source if "
             "it exists, otherwise it defaults to your current directory."
     )
     parser.add_option(
         "-o", "--output", action = "store", default = "./output",
+        metavar = "PATH", type = "path",
         help =
             "The directory to build the site into (it will be created if "
             "it does not exist). The special value :temp: may be provided, "
             "in which case a temporary directory will be used (it is "
             "destroyed when Phial exits). Defaults to %default."
+    )
+    parser.add_option(
+        "-e", "--output-encoding", action = "store", default = "utf_8",
+        help =
+            "The encoding to use when writing unicode strings to the "
+            "filesystem. Defaults to %default."
     )
     parser.add_option(
         "-v", "--verbose", action = "count", default = 0,
@@ -94,7 +107,7 @@ def parse_arguments(args = sys.argv[1:]):
     )
     monitor_options.add_option(
         "-w", "--watch", action = "append", dest = "watch_list",
-        metavar = "PATH",
+        metavar = "PATH", type = "path",
         default = [],
         help =
             "Adds a file or directory to the watch list. The path "
@@ -106,7 +119,7 @@ def parse_arguments(args = sys.argv[1:]):
     )
     monitor_options.add_option(
         "-W", "--dont-watch", action = "append", dest = "dont_watch_list",
-        metavar = "PATH",
+        metavar = "PATH", type = "path",
         default = [],
         help =
             "Adds a file or directory to the don't-watch list. The path "
@@ -171,7 +184,7 @@ def parse_arguments(args = sys.argv[1:]):
     parser.add_option_group(index_options)
     index_options.add_option(
         "--index-path", action = "store", default = ".phial_index",
-        dest = "index_path", metavar = "PATH",
+        dest = "index_path", metavar = "PATH", type = "path",
         help =
             "Where to store the index file. This is a path relative to the "
             "output directory (though it can also be an absolute path). "
@@ -323,27 +336,38 @@ def monitor(watch_list, dont_watch_list, wait_time, callback):
 
         callback()
 
-def build_app(app_path, source_dir, output_dir, index_path):
+def build_app(app_path, options):
     """
-    Builds the app. Will import the application in the current process so the
-    forking verision of this function is probably what you want.
+    Builds the app. Will import the application in the current process and change the directory so
+    the forking verision of this function is probably what you want.
 
     """
+
+    os.chdir(options.source)
 
     # Try and import the user's application
     try:
         # If we don't use the absolute path when importing we may not get
         # proper tracebacks if the current directory changes.
-        userapp = imp.load_source("userapp", os.path.abspath(app_path))
+        assert os.path.isabs(app_path)
+
+        userapp = imp.load_source("userapp", app_path)
     except:
         log.error("Could not load app at %r.", app_path, exc_info = True)
         sys.exit(100)
 
     try:
         log.info("Building application from sources in %r to output "
-            "directory %r.", source_dir, output_dir)
-        processor.process(source_dir = source_dir,
-            output_dir = output_dir, index_path = index_path)
+            "directory %r.", options.source, options.output)
+
+        try:
+            os.mkdir(options.output)
+        except OSError:
+            pass
+
+        logging.debug("commands.global_queue = %r", list(commands.global_queue))
+        for i in commands.global_queue:
+            i.run(vars(options))
     except:
         log.warning("Failed to build app.", exc_info = True)
 
@@ -417,7 +441,7 @@ def run_tool(*args):
     main(list(args))
 
 def _main(options, arguments, deletion_list):
-    app_path = arguments[0]
+    app_path = os.path.abspath(arguments[0])
 
     setup_logging(options.verbose)
 
@@ -426,9 +450,9 @@ def _main(options, arguments, deletion_list):
 
     if options.source is None:
         if os.path.isdir("./source"):
-            options.source = "./source"
+            options.source = os.path.abspath("./source")
         else:
-            options.source = "."
+            options.source = os.path.abspath(".")
 
     if options.output == ":temp:":
         temp_dir = tempfile.mkdtemp()
@@ -452,8 +476,7 @@ def _main(options, arguments, deletion_list):
         dont_watch_list.append(options.output)
 
     # We'll pass this callback function to our monitor routine
-    callback = lambda: fork_and_build_app(app_path, options.source,
-        options.output, options.index_path)
+    callback = lambda: fork_and_build_app(app_path, options)
 
     # Build the app before we go into monitor mode, also takes care of building
     # it if we're not going into monitor mode at all.

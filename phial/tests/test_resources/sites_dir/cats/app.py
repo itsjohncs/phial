@@ -1,19 +1,19 @@
-from phial import page, open_file, register_simple_assets
+from glob import glob
 
-register_simple_assets("styles.css", "images/*")
+from phial import *
+
+simple_assets("styles.css", "images/*")
 
 cats = []
 
-@page("cats/{name}.htm", files = "cats/*.htm")
-def bio_page(source, target):
-    # Page functions are executed in the order in which they are declared
-    # so the `cats` list will have all of the cats by the time we get to
-    # the main_page() function.
-    cats.append({"target": target, "name": source.frontmatter["name"]})
+@multipage("{}", foreach=glob("cats/*.htm"))
+def bio_page(path, item):
+    frontmatter, content = parse_frontmatter(item)
+
+    cats.append({"target": path, "name": frontmatter["name"]})
 
     template = open_file("bio_template.htm").read()
-    return template.format(content = source.content.read(),
-                           **source.frontmatter)
+    return template.format(content = content.read(), **frontmatter)
 
 @page("index.htm")
 def main_page():

@@ -19,9 +19,8 @@
 # `from documents import *` is used.
 __all__ = [
     "detect_encoding",
-    "Document",
     "open_file",
-    "parse_document",
+    "parse_frontmatter",
     "unicodify_file_object",
 ]
 
@@ -33,9 +32,6 @@ import tempfile
 
 # external
 import yaml
-
-# internal
-from . import exceptions
 
 
 class UnicodeSafeLoader(yaml.SafeLoader):
@@ -127,20 +123,23 @@ def unicodify_file_object(file_object, encoding="utf_8"):
                                      info.streamwriter, "strict")
 
 
-def parse_document(document_file):
+def parse_frontmatter(document):
     """Parses a document's frontmatter and contents.
 
     Will parse a document into its frontmatter and content components. The
     frontmatter will be decoded with a YAML parser.
 
-    :param document_file: A file-like object to consume. It must produce
-        ``unicode`` objects when read from rather than ``str`` (see
-        :func:`open_file`).
+    :param document: A path or a file-like object to consume. The file-like
+        object must produce ``unicode`` objects when read from rather than
+        ``str`` (see :func:`open_file`).
 
     :returns: A two-tuple ``(frontmatter, content)`` where ``frontmatter`` will
         be whatever the YAML decoder gave us and ``content`` is a file-like
         object containing the content.
     """
+    if isinstance(document, basestring):
+        document = open_file(document)
+
     FRONT_MATTER_END = u"..."
     SPOOL_MAX_SIZE = 4 * 1024 * 1024 # Four mebibytes
 
@@ -148,7 +147,7 @@ def parse_document(document_file):
     # matter.
     front_matter = unicodify_file_object(
         tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_SIZE))
-    for line in document_file:
+    for line in document:
         assert isinstance(line, unicode)
 
         front_matter.write(line)
@@ -160,8 +159,8 @@ def parse_document(document_file):
     else:
         # This occurs if we didn't break above, so we know that there was no
         # frontmatter after all.
-        document_file.seek(0)
-        return (None, document_file)
+        document.seek(0)
+        return (None, document)
 
     front_matter.seek(0)
     decoded_front_matter = yaml.load(front_matter.read(),
@@ -170,7 +169,7 @@ def parse_document(document_file):
     content_file = unicodify_file_object(
         tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_SIZE))
 
-    shutil.copyfileobj(document_file, content_file)
+    shutil.copyfileobj(document, content_file)
 
     content_file.seek(0)
     return (decoded_front_matter, content_file)
