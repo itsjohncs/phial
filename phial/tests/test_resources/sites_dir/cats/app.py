@@ -1,16 +1,14 @@
-from glob import glob
-
 from phial import *
 
 simple_assets("styles.css", "images/*")
 
 cats = []
 
-@multipage("{}", foreach=glob("cats/*.htm"))
-def bio_page(path, item):
+@multipage("cats/{}.htm", foreach="cats/*")
+def bio_page(target, item):
     frontmatter, content = parse_frontmatter(item)
 
-    cats.append({"target": path, "name": frontmatter["name"]})
+    cats.append({"target": target, "name": frontmatter["name"]})
 
     template = open_file("bio_template.htm").read()
     return template.format(content = content.read(), **frontmatter)
