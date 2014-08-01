@@ -3,6 +3,8 @@ Phial
 
 Phial is a simple Python library for building static sites.
 
+The API is currently unstable. Don't use Phial in your project yet. But if you can't wait, join me in developing it ;). The rest of this README is one in a series of drafts of what's to come.
+
 .. code-block:: python
 
     # hello.py
