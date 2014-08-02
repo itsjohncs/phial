@@ -1,4 +1,4 @@
-__all__ = ["page", "multipage"]
+__all__ = ["page", "multipage", "basename_noext"]
 
 # stdlib
 import codecs
@@ -111,7 +111,7 @@ class BuildMultiplePagesCommand(phial.commands.Command):
 
     def run(self, config):
         if isinstance(self.foreach, basestring):
-            foreach = glob.glob(self.foreach)
+            foreach = glob.iglob(self.foreach)
         else:
             foreach = self.foreach
 

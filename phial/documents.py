@@ -1,28 +1,4 @@
-# Copyright (c) 2013-2014 John Sullivan
-# Copyright (c) 2013-2014 Other contributers as noted in the CONTRIBUTERS file
-#
-# This file is part of Phial
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-#
-# You may obtain a copy of the License at
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# These are the only symbols that will be imported when
-# `from documents import *` is used.
-__all__ = [
-    "detect_encoding",
-    "open_file",
-    "parse_frontmatter",
-    "unicodify_file_object",
-]
+__all__ = ["detect_encoding", "open_file", "parse_frontmatter", "unicodify_file_object"]
 
 # stdlib
 import codecs
@@ -32,6 +8,9 @@ import tempfile
 
 # external
 import yaml
+
+# internal
+import phial.utils
 
 
 class UnicodeSafeLoader(yaml.SafeLoader):
@@ -141,12 +120,10 @@ def parse_frontmatter(document):
         document = open_file(document)
 
     FRONT_MATTER_END = u"..."
-    SPOOL_MAX_SIZE = 4 * 1024 * 1024 # Four mebibytes
 
     # Iterate through every line until we hit the end of the front
     # matter.
-    front_matter = unicodify_file_object(
-        tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_SIZE))
+    front_matter = unicodify_file_object(phial.utils.TemporaryFile())
     for line in document:
         assert isinstance(line, unicode)
 
@@ -163,11 +140,9 @@ def parse_frontmatter(document):
         return (None, document)
 
     front_matter.seek(0)
-    decoded_front_matter = yaml.load(front_matter.read(),
-                                     UnicodeSafeLoader)
+    decoded_front_matter = yaml.load(front_matter.read(), UnicodeSafeLoader)
 
-    content_file = unicodify_file_object(
-        tempfile.SpooledTemporaryFile(max_size=SPOOL_MAX_SIZE))
+    content_file = unicodify_file_object(phial.utils.TemporaryFile())
 
     shutil.copyfileobj(document, content_file)
 

@@ -1,9 +1,5 @@
 __all__ = ["CommandQueue"]
 
-# set up logging
-import logging
-log = logging.getLogger(__name__)
-
 
 class Command(object):
     def run(self, config):
@@ -18,6 +14,7 @@ class CommandQueue(object):
         self._queue.append(command)
 
     def __iter__(self):
+    	# Note that this sort is stable
         sorted_queue = sorted(self._queue, key=lambda x: getattr(x, "priority", 0))
         return iter(sorted_queue)
 

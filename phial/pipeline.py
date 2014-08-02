@@ -1,32 +1,58 @@
-# Copyright (c) 2013-2014 John Sullivan
-# Copyright (c) 2013-2014 Other contributers as noted in the CONTRIBUTERS file
-#
-# This file is part of Phial
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-#
-# You may obtain a copy of the License at
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-__all__ = ["Pipeline", "TemporaryFile", "concat", "cout"]
+__all__ = ["pipeline", "concat", "cout"]
 
 # stdlib
 import shutil
 import StringIO
 import sys
+import glob
+import os.path
 
-class Pipeline(object):
+# internal
+import phial.utils
+import phial.commands
+import phial.documents
+
+# set up logging
+import logging
+log = logging.getLogger(__name__)
+
+
+def pipeline(foreach, command_queue=phial.commands.global_queue):
+    def real_decorator(function):
+        command_queue.enqueue(BuildPipelineCommand(function, foreach))
+        return function
+
+    return real_decorator
+
+
+class BuildPipelineCommand(phial.commands.Command):
+    def __init__(self, function, foreach):
+        self.function = function
+        self.foreach = foreach
+
+    def run(self, config):
+        if isinstance(self.foreach, basestring):
+            foreach = [phial.documents.open_file(i) for i in glob.iglob(self.foreach)]
+        else:
+            foreach = self.foreach
+
+        result = self.function(PipelineSource(foreach))
+        logging.info("Pipe function %r yielded %d files.", self.function, len(result.contents))
+
+        for i in result.contents:
+            output_path = os.path.join(config["output"], i.name)
+            if not phial.utils.is_path_under_directory(output_path, config["output"]):
+                phial.utils.log_and_die(
+                    "Target path must be relative and under the output directory. Did you begin "
+                    "the path with a / or .. ?")
+
+            shutil.copyfileobj(i, phial.documents.unicodify_file_object(open(output_path, "w")))
+
+
+class PipelineSource(object):
     def prepare_contents(self):
         for i in self.contents:
-            assert hasattr(i, "name"), \
-                   "{i!r} does not have name attribute.".format(i=i)
+            assert hasattr(i, "name"), "{i!r} does not have name attribute.".format(i=i)
             i.seek(0)
 
     def __init__(self, contents):
@@ -44,27 +70,23 @@ class Pipeline(object):
     def __repr__(self):
         return self.__class__.__name__ + "(" + repr(self.contents) + ")"
 
-class TemporaryFile(StringIO.StringIO):
-    def __init__(self, name=None):
-        StringIO.StringIO.__init__(self)
-
-        self.name = name
 
 class concat(object):
     def __init__(self, output_name=None):
         self.output_name = output_name
 
     def __call__(self, contents):
-        result = TemporaryFile()
+        result = phial.utils.TemporaryFile(name=self.output_name)
         for i in contents:
             shutil.copyfileobj(i, result)
         return [result]
 
+
 class cout(object):
-	def __init__(self, out=sys.stdout):
-		self.out = sys.stdout
+    def __init__(self, out=sys.stdout):
+        self.out = sys.stdout
 
     def __call__(self, contents):
         for i in contents:
-	        shutil.copyfileobj(i, self.out)
-	    return contents
+            shutil.copyfileobj(i, self.out)
+        return contents

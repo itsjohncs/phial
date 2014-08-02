@@ -1,23 +1,9 @@
-# Copyright (c) 2013-2014 John Sullivan
-# Copyright (c) 2013-2014 Other contributers as noted in the CONTRIBUTERS file
-#
-# This file is part of Phial
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-#
-# You may obtain a copy of the License at
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+__all__ = ["TemporaryFile"]
 
 # stdlib
 import glob
 import os.path
+import tempfile
 
 
 def is_path_under_directory(path, directory):
@@ -38,3 +24,12 @@ def is_path_under_directory(path, directory):
 def log_and_die(logging_module, *args, **kwargs): 
     logging_module.error(*args, **kwargs)
     raise RuntimeError()
+
+
+class TemporaryFile(tempfile.SpooledTemporaryFile):
+	DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024 # 1024 * 1024 is one mebibyte
+
+	def __init__(self, name=None, spool_size=DEFAULT_SPOOL_SIZE):
+		self.name = name
+		self.spool_size = spool_size
+		tempfile.SpooledTemporaryFile.__init__(self, max_size=spool_size)
