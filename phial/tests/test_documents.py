@@ -1,5 +1,5 @@
-# test helpers
-from .. import documents
+# internal
+import phial.documents
 
 # external
 import pytest
@@ -66,7 +66,7 @@ class TestDocuments:
     def test_frontmatter_parsing(self, sample):
         fake_file = StringIO.StringIO(sample["raw"])
 
-        frontmatter, content = documents.parse_document(fake_file)
+        frontmatter, content = phial.documents.parse_frontmatter(fake_file)
 
         assert frontmatter == sample["frontmatter"]
         assert content.read() == sample["content"]
@@ -81,8 +81,8 @@ class TestDocuments:
             delete_path = f.name
 
         try:
-            assert documents.detect_encoding(f.name) == encoding[2]
-            with documents.open_file(f.name) as f:
+            assert phial.documents.detect_encoding(f.name) == encoding[2]
+            with phial.documents.open_file(f.name) as f:
                 result = f.read()
         finally:
             os.remove(delete_path)

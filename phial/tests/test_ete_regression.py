@@ -53,7 +53,7 @@ class TestSites:
 
             def chdir_and_runtool(*args, **kwargs):
                 os.chdir(copied_site_dir)
-                tool.run_tool("-vv", "app.py")
+                tool.run_tool("-vv", "--no-index", "app.py")
 
             p = multiprocessing.Process(target=chdir_and_runtool)
             p.start()
