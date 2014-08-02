@@ -1,8 +1,7 @@
-__all__ = ["pipeline", "concat", "cout"]
+__all__ = ("pipeline", "concat", "cout", )
 
 # stdlib
 import shutil
-import StringIO
 import sys
 import glob
 import os.path

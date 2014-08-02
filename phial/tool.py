@@ -1,5 +1,5 @@
 # stdlib
-from optparse import OptionParser, OptionGroup, make_option, Option
+from optparse import OptionParser, OptionGroup, Option
 import BaseHTTPServer
 import glob
 import hashlib
@@ -10,7 +10,6 @@ import multiprocessing
 import os
 import shutil
 import SimpleHTTPServer
-import stat
 import sys
 import time
 import tempfile
@@ -20,48 +19,39 @@ from . import commands
 
 log = logging.getLogger(__name__)
 
-def parse_arguments(args = sys.argv[1:]):
+
+def parse_arguments(args=sys.argv[1:]):
     class CustomOption(Option):
         TYPES = Option.TYPES + ("path", )
         TYPE_CHECKER = Option.TYPE_CHECKER
         TYPE_CHECKER["path"] = lambda option, opt, value: os.path.abspath(value)
 
     parser = OptionParser(
-        usage = "usage: %prog [options] app", option_class=CustomOption,
-        description =
-            "The Phial command line tool. See "
-            "http://github.com/brownhead/phial for more information on the "
-            "project.",
+        usage="usage: %prog [options] app", option_class=CustomOption,
+        description="The Phial command line tool. See http://github.com/brownhead/phial for more "
+                    "information on the project."
     )
 
     parser.add_option(
-        "-s", "--source", action = "store", default = None, metavar = "PATH",
-        type = "path",
-        help =
-            "The directory the source files are in. Defaults to ./source if "
-            "it exists, otherwise it defaults to your current directory."
+        "-s", "--source", action="store", default=None, metavar="PATH", type="path",
+        help="The directory the source files are in. Defaults to ./source if it exists, "
+             "otherwise it defaults to your current directory."
     )
     parser.add_option(
-        "-o", "--output", action = "store", default = "./output",
-        metavar = "PATH", type = "path",
-        help =
-            "The directory to build the site into (it will be created if "
-            "it does not exist). The special value :temp: may be provided, "
-            "in which case a temporary directory will be used (it is "
-            "destroyed when Phial exits). Defaults to %default."
+        "-o", "--output", action="store", default="./output", metavar="PATH", type="path",
+        help="The directory to build the site into (it will be created if it does not exist). "
+             "The special value :temp: may be provided, in which case a temporary directory "
+             "will be used (it is destroyed when Phial exits). Defaults to %default."
     )
     parser.add_option(
-        "-e", "--output-encoding", action = "store", default = "utf_8",
-        help =
-            "The encoding to use when writing unicode strings to the "
-            "filesystem. Defaults to %default."
+        "-e", "--output-encoding", action="store", default="utf_8",
+        help="The encoding to use when writing unicode strings to the filesystem. Defaults to "
+             "%default."
     )
     parser.add_option(
-        "-v", "--verbose", action = "count", default = 0,
-        help =
-            "Raises the verbosity. -v enables info level messages, -vv "
-            "enables debug level messages. By default, only errors and "
-            "warnings are displayed."
+        "-v", "--verbose", action="count", default=0,
+        help="Raises the verbosity. -v enables info level messages, -vv enables debug level "
+             "messages. By default, only errors and warnings are displayed."
     )
 
     # optparse doesn't have native support for aliases so we use a callback
@@ -71,114 +61,92 @@ def parse_arguments(args = sys.argv[1:]):
         parser.values.serve = True
         parser.values.monitor = True
     parser.add_option(
-        "-t", "--testing", action = "callback",
-        callback = testing_callback,
-        help = "Alias for: '--output :temp: --serve --monitor'."
+        "-t", "--testing", action="callback", callback=testing_callback,
+        help="Alias for: '--output :temp: --serve --monitor'."
     )
 
-    monitor_options = OptionGroup(parser, "Monitor Mode Options",
-        "Phial can monitor a set of files for you and trigger a build every "
-        "time one of the files is updated. This can be very useful when "
-        "editing your site. These options control the details of this mode."
+    monitor_options = OptionGroup(
+        parser, "Monitor Mode Options",
+        "Phial can monitor a set of files for you and trigger a build every time one of the files "
+        "is updated. This can be very useful when editing your site. These options control the "
+        "details of this mode."
     )
     parser.add_option_group(monitor_options)
     monitor_options.add_option(
-        "-m", "--monitor", action = "store_true", default = False,
-        help =
-            "If specified, the site will be rebuilt every time a change "
-            "is made to a file or directory in the watch list."
+        "-m", "--monitor", action="store_true", default=False,
+        help="If specified, the site will be rebuilt every time a change is made to a file or "
+             "directory in the watch list."
     )
     monitor_options.add_option(
-        "-w", "--watch", action = "append", dest = "watch_list",
-        metavar = "PATH", type = "path",
-        default = [],
-        help =
-            "Adds a file or directory to the watch list. The path "
-            "provided will be globbed every time the list is checked. By "
-            "default, the watch list will be populated with the source "
-            "directory as well as all of the unhidden files and "
-            "directories in the app script's directory. This default "
-            "behavior can be disabled with --no-watch-defaults."
+        "-w", "--watch", action="append", dest="watch_list", metavar="PATH", type="path",
+        default=[],
+        help="Adds a file or directory to the watch list. The path provided will be globbed "
+             "every time the list is checked. By default, the watch list will be populated with "
+             "the source directory as well as all of the unhidden files and directories in the "
+             "app script's directory. This default behavior can be disabled with "
+             "--no-watch-defaults."
     )
     monitor_options.add_option(
-        "-W", "--dont-watch", action = "append", dest = "dont_watch_list",
-        metavar = "PATH", type = "path",
-        default = [],
-        help =
-            "Adds a file or directory to the don't-watch list. The path "
-            "provided will be globbed every time the list is checked. "
-            "If a file or directory exists in both the watch list and the "
-            "don't-watch list, it will not be watched. By default, the "
-            "output directory will be in the don't-watch list. This default "
-            "behavior can be disabled with --no-watch-defaults. This "
-            "option exists because if your site generates some files into a "
-            "directory in the watch list Phial can get caught in a loop where "
-            "it will continually build your site over and over again."
+        "-W", "--dont-watch", action="append", dest="dont_watch_list", metavar="PATH", type="path",
+        default=[],
+        help="Adds a file or directory to the don't-watch list. The path provided will be "
+              "globbed every time the list is checked. If a file or directory exists in both the "
+              "watch list and the don't-watch list, it will not be watched. By default, the "
+              "output directory will be in the don't-watch list. This default behavior can be "
+              "disabled with --no-watch-defaults. This option exists because if your site "
+              "generates some files into a directory in the watch list Phial can get caught in a "
+              "loop where it will continually build your site over and over again."
     )
     monitor_options.add_option(
-        "--no-watch-defaults", action = "store_false", default = True,
-        dest = "watch_defaults",
-        help =
-            "Do not populate the watch list or the don't-watch list with "
-            "the default items."
+        "--no-watch-defaults", action="store_false", default=True, dest="watch_defaults",
+        help="Do not populate the watch list or the don't-watch list with the default items."
     )
     monitor_options.add_option(
-        "--watch-poll-frequency", action = "store", default = "1",
-        help =
-            "The amount of time to wait in between polling for changes. "
-            "Measured in seconds (can be a floating point value). "
-            "Defaults to %default."
+        "--watch-poll-frequency", action="store", default="1",
+        help="The amount of time to wait in between polling for changes. Measured in seconds (can "
+             "be a floating point value). Defaults to %default."
     )
 
-    server_options = OptionGroup(parser, "Serve Mode Options",
-        "Phial can serve your site on your local system. Enabling serve mode "
-        "is very similar to running 'python -m SimpleHTTPServer' in the "
-        "output directory."
+    server_options = OptionGroup(
+        parser, "Serve Mode Options",
+        "Phial can serve your site on your local system. Enabling serve mode is very similar to "
+        "running `python -m SimpleHTTPServer` in the output directory."
     )
     parser.add_option_group(server_options)
     server_options.add_option(
-        "--serve", action = "store_true", default = False,
-        help =
-            "If specified, the built site will be served by a built-in "
-            "HTTP server."
+        "--serve", action="store_true", default=False,
+        help="If specified, the built site will be served by a built-in HTTP server."
     )
     server_options.add_option(
-        "--serve-port", action = "store", default = "9000", metavar = "PORT",
-        help = "The TCP port to serve requests on. Defaults to %default."
+        "--serve-port", action="store", default="9000", metavar="PORT",
+        help="The TCP port to serve requests on. Defaults to %default."
     )
     server_options.add_option(
-        "--serve-host", action = "store", default = "localhost",
-        metavar = "HOST",
-        help =
-            "The host to serve requests on. This will determine the "
-            "network device that is listened to. You almost certainly "
-            "want to leave this on the default setting as exposing the "
-            "server publicly using the built-in HTTP server could cause "
-            "a security issue. Defaults to %default."
+        "--serve-host", action="store", default="localhost", metavar="HOST",
+        help="The host to serve requests on. This will determine the network device that is "
+             "listened to. You almost certainly want to leave this on the default setting as "
+             "exposing the server publicly using the built-in HTTP server could cause a security "
+             "issue. Defaults to %default."
     )
 
-    index_options = OptionGroup(parser, "Phial Index Options",
-        "Phial will automatically delete any old files from the output "
-        "directory. It needs to know which files it created in order to do "
-        "that without destroying any other important files though. It does "
-        "this by storing an index file. These options control the creation "
+    index_options = OptionGroup(
+        parser, "Phial Index Options",
+        "Phial will automatically delete any old files from the output directory. It needs to "
+        "know which files it created in order to do that without destroying any other important "
+        "files though. It does this by storing an index file. These options control the creation "
         "of that index file."
     )
     parser.add_option_group(index_options)
     index_options.add_option(
-        "--index-path", action = "store", default = ".phial_index",
-        dest = "index_path", metavar = "PATH", type = "path",
-        help =
-            "Where to store the index file. This is a path relative to the "
-            "output directory (though it can also be an absolute path). "
-            "Defaults to %default."
+        "--index-path", action="store", default=".phial_index", dest="index_path", metavar="PATH",
+        type="path",
+        help="Where to store the index file. This is a path relative to the output directory "
+             "(though it can also be an absolute path). Defaults to %default."
     )
     index_options.add_option(
-        "--no-index", action = "store_const", const = None,
-        dest = "index_path",
-        help =
-            "If specified, no index file will be created and Phial will not "
-            "clean the output directory."
+        "--no-index", action="store_const", const=None, dest="index_path",
+        help="If specified, no index file will be created and Phial will not clean the output "
+             "directory."
     )
 
     options, args = parser.parse_args(args)
@@ -190,6 +158,7 @@ def parse_arguments(args = sys.argv[1:]):
 
     return (options, args)
 
+
 def setup_logging(verbose):
     if verbose >= 2:
         log_level = logging.DEBUG
@@ -198,22 +167,21 @@ def setup_logging(verbose):
     else:
         log_level = logging.WARNING
 
-
     if log_level == logging.DEBUG:
-        format = ("[%(name)15s:%(lineno)3s - %(funcName)20s] %(levelname)5s "
-            "- %(message)s")
+        format = "[%(name)15s:%(lineno)3s - %(funcName)20s] %(levelname)5s - %(message)s"
     else:
-        format  = "%(levelname)s - %(message)s"
+        format = "%(levelname)s - %(message)s"
 
-
-    logging.basicConfig(level = log_level, format = format)
+    logging.basicConfig(level=log_level, format=format)
 
     # We have to wait for the logger to be initialized to log this
     if verbose > 2:
         logging.warning("`-v` or `--verbose` specified more than 2 times.")
 
+
 def get_state_token(dir_paths, exceptions):
-    """
+    """Return unique hash of names and timestamps in the given directories.
+
     This function will iterate through the names and timestamps on every file
     in the given directories and return a unique hash of that information.
 
@@ -224,25 +192,20 @@ def get_state_token(dir_paths, exceptions):
 
     Any item that exists in the exceptions list will be ignored. The format of
     the exceptions list is the same as for dir_paths.
-
     """
-
     def expand_globs(paths):
-        """Globs every path in paths and returns the resulting list."""
-
+        """Glob every path in paths and returns the resulting list."""
         # This will turn [[1, 2], [1]] into [1, 2, 1] (flatten the list)
         return itertools.chain.from_iterable(glob.glob(i)for i in paths)
 
     def walk_many(paths):
         """Generator that walks all the paths given."""
-
         for i in paths:
-            for j in os.walk(i, topdown = True):
+            for j in os.walk(i, topdown=True):
                 yield j
 
-    def prune_paths(paths, exceptions_set, root = "."):
-        return [i for i in paths
-            if os.path.abspath(os.path.join(root, i)) not in exceptions_set]
+    def prune_paths(paths, exceptions_set, root="."):
+        return [i for i in paths if os.path.abspath(os.path.join(root, i)) not in exceptions_set]
 
     # Glob and get a canonical path for each of the exceptions
     exceptions = expand_globs(exceptions)
@@ -294,15 +257,11 @@ def get_state_token(dir_paths, exceptions):
 
     return hasher.digest()
 
+
 def monitor(watch_list, dont_watch_list, wait_time, callback):
-    """
-    Loops forever and runs callback whenever a change is detected in the watch
-    list.
-
-    """
-
-    log.info("Entering monitor mode. Watch list: %r. Don't watch list: %r.",
-        watch_list, dont_watch_list)
+    """Loop forever and run callback whenever a change is detected in the watch list."""
+    log.info("Entering monitor mode. Watch list: %r. Don't watch list: %r.", watch_list,
+             dont_watch_list)
 
     old_token = get_state_token(watch_list, dont_watch_list)
 
@@ -319,13 +278,13 @@ def monitor(watch_list, dont_watch_list, wait_time, callback):
 
         callback()
 
+
 def build_app(app_path, options):
-    """
-    Builds the app. Will import the application in the current process and change the directory so
-    the forking verision of this function is probably what you want.
+    """Build the app.
 
+    Will import the application in the current process and change the directory so the forking
+    verision of this function is probably what you want.
     """
-
     os.chdir(options.source)
 
     # Try and import the user's application
@@ -334,14 +293,14 @@ def build_app(app_path, options):
         # proper tracebacks if the current directory changes.
         assert os.path.isabs(app_path)
 
-        userapp = imp.load_source("userapp", app_path)
+        imp.load_source("userapp", app_path)
     except:
-        log.error("Could not load app at %r.", app_path, exc_info = True)
+        log.error("Could not load app at %r.", app_path, exc_info=True)
         sys.exit(100)
 
     try:
-        log.info("Building application from sources in %r to output "
-            "directory %r.", options.source, options.output)
+        log.info("Building application from sources in %r to output directory %r.", options.source,
+                 options.output)
 
         try:
             os.mkdir(options.output)
@@ -352,23 +311,18 @@ def build_app(app_path, options):
         for i in commands.global_queue:
             i.run(vars(options))
     except:
-        log.warning("Failed to build app.", exc_info = True)
+        log.warning("Failed to build app.", exc_info=True)
+
 
 def fork_and_build_app(*args, **kwargs):
-    """
-    Forks a new process and builds the app.
-
-    """
-
-    p = multiprocessing.Process(target = build_app, args = args,
-        kwargs = kwargs)
+    """Fork a new process and builds the app."""
+    p = multiprocessing.Process(target=build_app, args=args, kwargs=kwargs)
 
     # This will make sure Python tries to kill the process when it comes down
     # in case anything goes wrong.
     p.daemon = True
 
-    log.debug("Forking to build app. Passings args %r and kwargs %r to "
-        "build_app().", args, kwargs)
+    log.debug("Forking to build app. Passings args %r and kwargs %r to build_app().", args, kwargs)
     p.start()
 
     # Wait for the process to terminate
@@ -377,6 +331,7 @@ def fork_and_build_app(*args, **kwargs):
     log.debug("Forked process finished, exit code %r.", p.exitcode)
     if p.exitcode != 0:
         log.warning("Failed to build site.")
+
 
 def fork_and_serve(public_dir, host, port, verbose):
     # Override the request handler's logging feature to log debug messages
@@ -398,11 +353,12 @@ def fork_and_serve(public_dir, host, port, verbose):
     # Print to stdout to ensure the user always recieves this message (without
     # doing anything too clunky like logging an error).
     print "Serving site at http://{}:{}".format(host, port)
-    p = multiprocessing.Process(target = serve)
+    p = multiprocessing.Process(target=serve)
     p.daemon = True
     p.start()
 
-def main(args = sys.argv[1:]):
+
+def main(args=sys.argv[1:]):
     options, arguments = parse_arguments(args)
 
     deletion_list = []
@@ -410,7 +366,7 @@ def main(args = sys.argv[1:]):
     try:
         _main(options, arguments, deletion_list)
     except KeyboardInterrupt:
-        log.info("User sent interrupt, exiting.", exc_info = options.verbose)
+        log.info("User sent interrupt, exiting.", exc_info=options.verbose)
         sys.exit(1)
     finally:
         if deletion_list:
@@ -418,18 +374,19 @@ def main(args = sys.argv[1:]):
             for i in deletion_list:
                 shutil.rmtree(i)
 
-def run_tool(*args):
-    """Runs the Phial command line tool with the given arguments."""
 
+def run_tool(*args):
+    """Run the Phial command line tool with the given arguments."""
     main(list(args))
+
 
 def _main(options, arguments, deletion_list):
     app_path = os.path.abspath(arguments[0])
 
     setup_logging(options.verbose)
 
-    log.debug("Parsed command line arguments. arguments = %r, options = %r.",
-        arguments, vars(options))
+    log.debug("Parsed command line arguments. arguments = %r, options = %r.", arguments,
+              vars(options))
 
     if options.source is None:
         if os.path.isdir("./source"):
@@ -467,13 +424,12 @@ def _main(options, arguments, deletion_list):
 
     if options.serve:
         # This will fork off a web server and return immediately
-        fork_and_serve(options.output, options.serve_host,
-            int(options.serve_port), options.verbose)
+        fork_and_serve(options.output, options.serve_host, int(options.serve_port),
+                       options.verbose)
 
     if options.monitor:
         # This function never returns
-        monitor(watch_list, dont_watch_list,
-            float(options.watch_poll_frequency), callback)
+        monitor(watch_list, dont_watch_list, float(options.watch_poll_frequency), callback)
 
     # If the user wants to serve the site but didn't enable monitoring we'd
     # exit immediately if we didn't do this.

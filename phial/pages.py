@@ -1,4 +1,4 @@
-__all__ = ["page", "multipage", "basename_noext"]
+__all__ = ("page", "multipage", "basename_noext", )
 
 # stdlib
 import codecs
@@ -58,7 +58,7 @@ class BuildPageCommand(phial.commands.Command):
             log.debug("Ignoring error making directory for %r.", output_path, exc_info=True)
 
         logging.info("Writing output of page function %r to %r.", self.function, self.target)
-        
+
         if isinstance(output, unicode):
             with codecs.open(output_path, "w", config["output_encoding"]) as f:
                 f.write(output)
@@ -87,6 +87,7 @@ class PartialFunction(object):
         ``PartialFunction.__repr__``). This can be an issue for lambdas (which always have the name
         ``<lambda>``).
     """
+
     def __init__(self, function, *args, **kwargs):
         self.function = function
         self.args = args

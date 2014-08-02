@@ -2,8 +2,9 @@
 import pkg_resources
 import os
 
+
 def get_site_dir(name=None):
-    """Returns a path containing a site.
+    """Return a path containing a site.
 
     Will extract the site's directory if necessary (if we're in a zip file).
     If ``None`` is given for ``name``, a path to the ``sites_dir/`` directory
@@ -24,8 +25,9 @@ def get_site_dir(name=None):
 
         return result
 
+
 def list_sites():
-    """Returns a list of all of the test sites available.
+    """Return a list of all of the test sites available.
 
     >>> list_sites()
     ["simple", "readme"]

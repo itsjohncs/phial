@@ -1,13 +1,12 @@
-__all__ = ["TemporaryFile"]
+__all__ = ("TemporaryFile", )
 
 # stdlib
-import glob
 import os.path
 import tempfile
 
 
 def is_path_under_directory(path, directory):
-    """Returns True if ``path`` is in ``dir``.
+    """Return True if ``path`` is in ``dir``.
 
     This operates only on paths and does not actually access the filesystem.
     """
@@ -21,15 +20,15 @@ def is_path_under_directory(path, directory):
 # included. It might be worthwhile to get fancy and cut off the last frame
 # (this one) to avoid the common confusion of the last frame being pretty
 # useless.
-def log_and_die(logging_module, *args, **kwargs): 
+def log_and_die(logging_module, *args, **kwargs):
     logging_module.error(*args, **kwargs)
     raise RuntimeError()
 
 
 class TemporaryFile(tempfile.SpooledTemporaryFile):
-	DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024 # 1024 * 1024 is one mebibyte
+    DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024  # 1024 * 1024 is one mebibyte
 
-	def __init__(self, name=None, spool_size=DEFAULT_SPOOL_SIZE):
-		self.name = name
-		self.spool_size = spool_size
-		tempfile.SpooledTemporaryFile.__init__(self, max_size=spool_size)
+    def __init__(self, name=None, spool_size=DEFAULT_SPOOL_SIZE):
+        self.name = name
+        self.spool_size = spool_size
+        tempfile.SpooledTemporaryFile.__init__(self, max_size=spool_size)

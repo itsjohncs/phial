@@ -1,4 +1,4 @@
-__all__ = ["CommandQueue"]
+__all__ = ("CommandQueue", )
 
 
 class Command(object):
@@ -14,7 +14,7 @@ class CommandQueue(object):
         self._queue.append(command)
 
     def __iter__(self):
-    	# Note that this sort is stable
+        # Note that this sort is stable
         sorted_queue = sorted(self._queue, key=lambda x: getattr(x, "priority", 0))
         return iter(sorted_queue)
 

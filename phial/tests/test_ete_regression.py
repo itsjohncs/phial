@@ -9,12 +9,11 @@ import pytest
 import multiprocessing
 import tempfile
 import shutil
-import filecmp
 import os
 
+
 def recursive_compare(dir1, dir2):
-    """Returns True iff dir1 and dir2 have the same contents.
-    """
+    """Return True iff dir1 and dir2 have the same contents. """
     def get_all_files(dir_path):
         for root, dirs, files in os.walk(dir_path):
             for name in files + dirs:
@@ -42,11 +41,11 @@ def recursive_compare(dir1, dir2):
 
     return True
 
+
 class TestSites:
     @pytest.mark.parametrize("site_name", sites.list_sites())
     def test_output_matches(self, site_name):
-        """Ensure the output of the site is what we expect.
-        """
+        """Ensure the output of the site is what we expect."""
         temp_dir = tempfile.mkdtemp()
         try:
             copied_site_dir = os.path.join(temp_dir, "site")

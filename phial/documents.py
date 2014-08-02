@@ -1,10 +1,8 @@
-__all__ = ["detect_encoding", "open_file", "parse_frontmatter", "unicodify_file_object"]
+__all__ = ("detect_encoding", "open_file", "parse_frontmatter", "unicodify_file_object", )
 
 # stdlib
 import codecs
-import os
 import shutil
-import tempfile
 
 # external
 import yaml
@@ -21,6 +19,7 @@ class UnicodeSafeLoader(yaml.SafeLoader):
     strings here. The default handling will return a str if every character is
     a valid ASCII character.
     """
+
     yaml_constructors = {
         u"tag:yaml.org,2002:str":
             lambda loader, node: loader.construct_scalar(node)
@@ -28,7 +27,7 @@ class UnicodeSafeLoader(yaml.SafeLoader):
 
 
 def detect_encoding(path):
-    """Returns encoding of file at path.
+    """Return encoding of file at path.
 
     This is not a general purpose function and will not detect all encodings
     (and in fact can only detect a few). It follows the
@@ -68,7 +67,7 @@ def detect_encoding(path):
 
 
 def open_file(path, mode="r"):
-    """Opens a file with the correct encoding.
+    """Open a file with the correct encoding.
 
     :func:`detect_encoding` will be used to determine the encoding, then the
     file will be opened with
@@ -87,7 +86,7 @@ def open_file(path, mode="r"):
 
 # TODO(brownhead): I don't think emit is really the right verb here.
 def unicodify_file_object(file_object, encoding="utf_8"):
-    """Wraps a file object to accept and emit unicode.
+    """Wrap a file object to accept and emit unicode.
 
     This is done by invisibly encoding unicode strings into ``encoding`` before
     writing, and decoding into unicode string after reading.
@@ -103,7 +102,7 @@ def unicodify_file_object(file_object, encoding="utf_8"):
 
 
 def parse_frontmatter(document):
-    """Parses a document's frontmatter and contents.
+    """Parse a document's frontmatter and contents.
 
     Will parse a document into its frontmatter and content components. The
     frontmatter will be decoded with a YAML parser.

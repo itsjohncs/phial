@@ -1,10 +1,12 @@
-__all__ = ["simple_assets"]
+__all__ = ("simple_assets", )
 
 # internal
 import phial.commands
 
 # stdlib
 import glob
+import os.path
+import shutil
 
 # set up logging
 import logging
@@ -31,4 +33,4 @@ class CopySimpleAssetsCommand(phial.commands.Command):
                 except OSError:
                     log.debug("Ignoring error making directory for %r.", i, exc_info=True)
 
-                shutil.copy2(i, output)
+                shutil.copy2(i, os.path.join(config["output"], i))

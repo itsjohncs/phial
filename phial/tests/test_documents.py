@@ -60,6 +60,7 @@ TEST_ENCODINGS = [
     ("utf_16_le", codecs.BOM_UTF16_LE, "utf_16")
 ]
 
+
 class TestDocuments:
     @pytest.mark.parametrize("sample", SAMPLE_FILES)
     def test_frontmatter_parsing(self, sample):
@@ -75,7 +76,7 @@ class TestDocuments:
         encoded_pony = encoding[1] + UNICODE_TEST_PONY.encode(encoding[0])
         print repr(encoded_pony)
 
-        with tempfile.NamedTemporaryFile(delete = False) as f:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
             f.write(encoded_pony)
             delete_path = f.name
 
@@ -83,7 +84,6 @@ class TestDocuments:
             assert documents.detect_encoding(f.name) == encoding[2]
             with documents.open_file(f.name) as f:
                 result = f.read()
-                result_encoding = f.encoding
         finally:
             os.remove(delete_path)
 
