@@ -14,14 +14,14 @@ def get_site_dir(name=None):
         "phial.tests.test_resources", "sites_dir")
     if not os.path.exists(sites_dir):
         raise RuntimeError(
-            "Could not find sites directory at {}.".format(sites_dir))
+            "Could not find sites directory at {0}.".format(sites_dir))
 
     if name is None:
         return sites_dir
     else:
         result = os.path.join(sites_dir, name)
         if not os.path.exists(result):
-            raise ValueError("Could not find site %s." % (name, ))
+            raise ValueError("Could not find site {0}.".format(name))
 
         return result
 

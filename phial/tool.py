@@ -16,8 +16,10 @@ import tempfile
 
 # internal
 from . import commands
+import phial.loggers
+import phial.utils
 
-log = logging.getLogger(__name__)
+log = phial.loggers.get_logger(__name__)
 
 
 def parse_arguments(args=sys.argv[1:]):
@@ -167,12 +169,12 @@ def setup_logging(verbose):
     else:
         log_level = logging.WARNING
 
-    if log_level == logging.DEBUG:
-        format = "[%(name)15s:%(lineno)3s - %(funcName)20s] %(levelname)5s - %(message)s"
-    else:
-        format = "%(levelname)s - %(message)s"
+    phial_logger = logging.getLogger("phial")
+    phial_logger.setLevel(log_level)
 
-    logging.basicConfig(level=log_level, format=format)
+    handler = logging.StreamHandler()
+    handler.setFormatter(phial.loggers.LogFormatter())
+    phial_logger.addHandler(handler)
 
     # We have to wait for the logger to be initialized to log this
     if verbose > 2:
@@ -260,7 +262,7 @@ def get_state_token(dir_paths, exceptions):
 
 def monitor(watch_list, dont_watch_list, wait_time, callback):
     """Loop forever and run callback whenever a change is detected in the watch list."""
-    log.info("Entering monitor mode. Watch list: %r. Don't watch list: %r.", watch_list,
+    log.info("Entering monitor mode. Watch list: {0!r}. Don't watch list: {1!r}.", watch_list,
              dont_watch_list)
 
     old_token = get_state_token(watch_list, dont_watch_list)
@@ -295,23 +297,25 @@ def build_app(app_path, options):
 
         imp.load_source("userapp", app_path)
     except:
-        log.error("Could not load app at %r.", app_path, exc_info=True)
+        log.error("Could not load app at {0}.", app_path, exc_info=True)
         sys.exit(100)
 
     try:
-        log.info("Building application from sources in %r to output directory %r.", options.source,
-                 options.output)
+        log.info("Building application from sources in {0} to output directory {1}.",
+                 options.source, options.output)
 
         try:
-            os.mkdir(options.output)
+            phial.utils.makedirs(options.output)
         except OSError:
-            pass
+            log.debug("Ignoring error creating output directory at {0}.", options.output,
+                      exc_info=True, exc_ignored=True)
 
-        logging.debug("commands.global_queue = %r", list(commands.global_queue))
+        log.debug("About to consume queue: {0!r}", list(commands.global_queue))
         for i in commands.global_queue:
             i.run(vars(options))
-    except:
-        log.warning("Failed to build app.", exc_info=True)
+    except Exception as e:
+        show_tb = not isinstance(e, phial.loggers.LoggedDeath)
+        log.warning("Failed to build app.", exc_info=show_tb)
 
 
 def fork_and_build_app(*args, **kwargs):
@@ -322,13 +326,14 @@ def fork_and_build_app(*args, **kwargs):
     # in case anything goes wrong.
     p.daemon = True
 
-    log.debug("Forking to build app. Passings args %r and kwargs %r to build_app().", args, kwargs)
+    log.debug("Forking to build app. Passings args {0!r} and kwargs {1!r} to build_app().", args,
+              kwargs)
     p.start()
 
     # Wait for the process to terminate
     p.join()
 
-    log.debug("Forked process finished, exit code %r.", p.exitcode)
+    log.debug("Forked process finished, exit code {0!s}.", p.exitcode)
     if p.exitcode != 0:
         log.warning("Failed to build site.")
 
@@ -352,7 +357,7 @@ def fork_and_serve(public_dir, host, port, verbose):
 
     # Print to stdout to ensure the user always recieves this message (without
     # doing anything too clunky like logging an error).
-    print "Serving site at http://{}:{}".format(host, port)
+    print "Serving site at http://{0}:{1}".format(host, port)
     p = multiprocessing.Process(target=serve)
     p.daemon = True
     p.start()
@@ -366,11 +371,11 @@ def main(args=sys.argv[1:]):
     try:
         _main(options, arguments, deletion_list)
     except KeyboardInterrupt:
-        log.info("User sent interrupt, exiting.", exc_info=options.verbose)
+        log.info("User sent interrupt, exiting.", exc_info=options.verbose, exc_ignored=True)
         sys.exit(1)
     finally:
         if deletion_list:
-            log.info("Removing files/directories %r.", deletion_list)
+            log.info("Removing files/directories {0!r}.", deletion_list)
             for i in deletion_list:
                 shutil.rmtree(i)
 
@@ -385,7 +390,7 @@ def _main(options, arguments, deletion_list):
 
     setup_logging(options.verbose)
 
-    log.debug("Parsed command line arguments. arguments = %r, options = %r.", arguments,
+    log.debug("Parsed command line arguments. arguments = {0!r}, options = {1!r}.", arguments,
               vars(options))
 
     if options.source is None:
@@ -397,7 +402,7 @@ def _main(options, arguments, deletion_list):
     if options.output == ":temp:":
         temp_dir = tempfile.mkdtemp()
         deletion_list.append(temp_dir)
-        log.info("Created temporary directory at %r.", temp_dir)
+        log.info("Created temporary directory at {0}.", temp_dir)
         options.output = temp_dir
 
     watch_list = list(options.watch_list)

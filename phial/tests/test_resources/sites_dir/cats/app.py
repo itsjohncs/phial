@@ -5,7 +5,7 @@ phial.simple_assets("styles.css", "images/*")
 cats = []
 
 
-@phial.multipage("cats/{}.htm", foreach="cats/*")
+@phial.multipage("cats/{0}.htm", foreach="cats/*")
 def bio_page(target, item):
     frontmatter, content = phial.parse_frontmatter(item)
 

@@ -10,8 +10,8 @@ import phial.commands
 import phial.utils
 
 # set up logging
-import logging
-log = logging.getLogger(__name__)
+import phial.loggers
+log = phial.loggers.get_logger(__name__)
 
 
 def page(target, command_queue=phial.commands.global_queue):
@@ -43,21 +43,22 @@ class BuildPageCommand(phial.commands.Command):
     def run(self, config):
         output = self.function()
         if output is None:
-            log.info("Page function %r returned None.", self.function)
+            log.info("Page function {0!r} returned None.", self.function)
             return
 
         output_path = os.path.join(config["output"], self.target)
         if not phial.utils.is_path_under_directory(output_path, config["output"]):
-            phial.utils.log_and_die(
+            log.die(
                 "Page's target path must be relative and under the output directory. Did you "
                 "begin the path with a / or .. ?")
 
         try:
-            os.makedirs(os.path.join(config["output"], os.path.dirname(output_path)))
+            phial.utils.makedirs(os.path.join(config["output"], os.path.dirname(output_path)))
         except OSError:
-            log.debug("Ignoring error making directory for %r.", output_path, exc_info=True)
+            log.debug("Ignoring error making directory for {0!r}.", output_path, exc_info=True,
+                      exc_ignored=True)
 
-        logging.info("Writing output of page function %r to %r.", self.function, self.target)
+        log.info("Writing output of page function {0!s} to {1}.", self.function, self.target)
 
         if isinstance(output, unicode):
             with codecs.open(output_path, "w", config["output_encoding"]) as f:
@@ -66,7 +67,7 @@ class BuildPageCommand(phial.commands.Command):
             with open(output_path, "wb") as f:
                 f.write(output)
         else:
-            phial.utils.log_and_die("Page function must return str or unicode instance")
+            log.die("Page function must return str or unicode instance")
 
 
 class PartialFunction(object):
@@ -95,8 +96,8 @@ class PartialFunction(object):
 
     def __repr__(self):
         bound_args = ", ".join([self.function.__name__] + list(repr(i) for i in self.args) +
-                               ["{!s}={!r}".format(k, v) for k, v in self.kwargs.iteritems()])
-        return "PartialFunction({})".format(bound_args)
+                               ["{0!s}={1!r}".format(k, v) for k, v in self.kwargs.iteritems()])
+        return "PartialFunction({0})".format(bound_args)
 
     def __call__(self, *args, **kwargs):
         computed_kwargs = dict(self.kwargs.items() + kwargs.items())
@@ -122,9 +123,8 @@ class BuildMultiplePagesCommand(phial.commands.Command):
             try:
                 resolved_target = self.target.format(preformatted)
             except Exception as e:
-                phial.utils.log_and_die(
-                    "%s raised resolving target path %r for page function %r (item = %r)",
-                    e.__class__.__name__, self.target, self.function, i, exc_info=True)
+                log.die("Could not resolve target path {0!r} for page function {1!r} "
+                        "(item = {2!r})", self.target, self.function, i, exc_info=True)
 
             bound_func = PartialFunction(self.function, resolved_target, i)
             BuildPageCommand(function=bound_func, target=resolved_target).run(config)

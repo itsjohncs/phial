@@ -58,7 +58,7 @@ class TestSites:
             p = multiprocessing.Process(target=chdir_and_runtool)
             p.start()
             p.join(10)
-            assert not p.is_alive(), "Phial did not die, pid={}.".format(p.pid)
+            assert not p.is_alive(), "Phial did not die, pid={0}.".format(p.pid)
             assert p.exitcode == 0
 
             output_path = os.path.join(copied_site_dir, "output")

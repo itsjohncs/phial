@@ -12,8 +12,8 @@ import phial.commands
 import phial.documents
 
 # set up logging
-import logging
-log = logging.getLogger(__name__)
+import phial.loggers
+log = phial.loggers.get_logger(__name__)
 
 
 def pipeline(foreach, command_queue=phial.commands.global_queue):
@@ -36,12 +36,12 @@ class BuildPipelineCommand(phial.commands.Command):
             foreach = self.foreach
 
         result = self.function(PipelineSource(foreach))
-        logging.info("Pipe function %r yielded %d files.", self.function, len(result.contents))
+        log.info("Pipe function {0!r} yielded {1!s} files.", self.function, len(result.contents))
 
         for i in result.contents:
             output_path = os.path.join(config["output"], i.name)
             if not phial.utils.is_path_under_directory(output_path, config["output"]):
-                phial.utils.log_and_die(
+                log.die(
                     "Target path must be relative and under the output directory. Did you begin "
                     "the path with a / or .. ?")
 
@@ -51,7 +51,7 @@ class BuildPipelineCommand(phial.commands.Command):
 class PipelineSource(object):
     def prepare_contents(self):
         for i in self.contents:
-            assert hasattr(i, "name"), "{i!r} does not have name attribute.".format(i=i)
+            assert hasattr(i, "name"), "{0!r} does not have name attribute.".format(i)
             i.seek(0)
 
     def __init__(self, contents):

@@ -2,6 +2,7 @@ __all__ = ("simple_assets", )
 
 # internal
 import phial.commands
+import phial.utils
 
 # stdlib
 import glob
@@ -9,8 +10,8 @@ import os.path
 import shutil
 
 # set up logging
-import logging
-log = logging.getLogger(__name__)
+import phial.loggers
+log = phial.loggers.get_logger(__name__)
 
 
 def simple_assets(*args, **kwargs):
@@ -29,8 +30,9 @@ class CopySimpleAssetsCommand(phial.commands.Command):
         for path in self.paths:
             for i in glob.iglob(path):
                 try:
-                    os.makedirs(os.path.join(config["output"], os.path.dirname(i)))
+                    phial.utils.makedirs(os.path.join(config["output"], os.path.dirname(i)))
                 except OSError:
-                    log.debug("Ignoring error making directory for %r.", i, exc_info=True)
+                    log.debug("Ignoring error making directory for {0}.", i, exc_info=True,
+                              exc_ignored=True)
 
                 shutil.copy2(i, os.path.join(config["output"], i))

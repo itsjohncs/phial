@@ -16,15 +16,6 @@ def is_path_under_directory(path, directory):
     return path.startswith(directory)
 
 
-# TODO(brownhead): Spruce this up so we just get log message with a traceback
-# included. It might be worthwhile to get fancy and cut off the last frame
-# (this one) to avoid the common confusion of the last frame being pretty
-# useless.
-def log_and_die(logging_module, *args, **kwargs):
-    logging_module.error(*args, **kwargs)
-    raise RuntimeError()
-
-
 class TemporaryFile(tempfile.SpooledTemporaryFile):
     DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024  # 1024 * 1024 is one mebibyte
 
@@ -32,3 +23,13 @@ class TemporaryFile(tempfile.SpooledTemporaryFile):
         self.name = name
         self.spool_size = spool_size
         tempfile.SpooledTemporaryFile.__init__(self, max_size=spool_size)
+
+
+def makedirs(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        # This is a little racey, but does a good job at reducing massive log spam, so definitely
+        # a net win.
+        if e.errno != 17 and os.path.isdir(path):
+            raise
