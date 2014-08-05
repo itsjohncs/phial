@@ -4,6 +4,7 @@ import traceback
 import sys
 import logging
 import string
+import re
 
 
 def style_text(classnames, text, base_classnames="default"):
@@ -12,10 +13,13 @@ def style_text(classnames, text, base_classnames="default"):
         "default": [0],
         "error": [31],  # red
         "warning": [33],  # yellow
-        "info": [0],  # default color (probably black)
-        "debug": [2],  # faint default
+        "info": [0],  # default
+        "debug": [0, 2],  # faint default
         "argument": [34],  # blue
-        "faint": [2],
+        "ignored_tb": [2],  # faint
+        "tb_path": [34],  # blue
+        "tb_lineno": [34],  # blue
+        "tb_exc_name": [31],  # red
     }
 
     values = []
@@ -72,12 +76,40 @@ class LogFormatter(object):
         traceback.print_exception(record.exc_info[0], record.exc_info[1], record.exc_info[2],
                                   file=dummy_file)
         tb = dummy_file.getvalue().strip()
-        tb = self.indent_text(tb)
 
         classnames = record.levelname
         if getattr(record, "exc_ignored", False):
-            classnames += " faint"
+            classnames += " ignored_tb"
+
+        tb = self.highlight_tb(tb, classnames)
+
+        tb = self.indent_text(tb)
+
         return style_text(classnames, tb)
+
+    @staticmethod
+    def highlight_tb(tb, base_classnames):
+        FILE_LINE_RE = re.compile(r'^  File (".+"), line ([0-9]+), in (.*)$', re.MULTILINE | re.UNICODE)
+        def repl_file_line(match):
+            return '  File {0}, line {1}, in {2}'.format(
+                style_text("tb_path", match.group(1), base_classnames),
+                style_text("tb_lineno", match.group(2), base_classnames),
+                match.group(3)
+            )
+
+        FOOTER_LINE_RE = re.compile(r"^(\w+)(.*)$", re.MULTILINE | re.UNICODE)
+        def repl_footer_line(match):
+            return style_text("tb_exc_name", match.group(1), base_classnames) + match.group(2)
+
+        lines = tb.split("\n")
+        if len(lines) < 2:
+            return tb
+        lines[-1] = FOOTER_LINE_RE.sub(repl_footer_line, lines[-1])
+        tb = "\n".join(lines)
+
+        tb = FILE_LINE_RE.sub(repl_file_line, tb)
+
+        return tb
 
 
 class LoggedDeath(Exception):

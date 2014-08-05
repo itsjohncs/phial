@@ -375,7 +375,7 @@ def main(args=sys.argv[1:]):
         sys.exit(1)
     finally:
         if deletion_list:
-            log.info("Removing files/directories {0!r}.", deletion_list)
+            log.debug("Removing files/directories {0!r}.", deletion_list)
             for i in deletion_list:
                 shutil.rmtree(i)
 

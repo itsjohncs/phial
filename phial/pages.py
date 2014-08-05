@@ -55,10 +55,10 @@ class BuildPageCommand(phial.commands.Command):
         try:
             phial.utils.makedirs(os.path.join(config["output"], os.path.dirname(output_path)))
         except OSError:
-            log.debug("Ignoring error making directory for {0!r}.", output_path, exc_info=True,
+            log.debug("Ignoring error making directory for {0}.", output_path, exc_info=True,
                       exc_ignored=True)
 
-        log.info("Writing output of page function {0!s} to {1}.", self.function, self.target)
+        log.info("Writing output of page function {0!r} to {1}.", self.function, self.target)
 
         if isinstance(output, unicode):
             with codecs.open(output_path, "w", config["output_encoding"]) as f:
