@@ -5,8 +5,8 @@
 # modules in this package are not necessarily as tidy.
 from phial.pages import *
 from phial.documents import *
-from phial.simple_assets import *
 from phial.utils import *
 from phial.pipeline import *
+from phial.simple_assets import *
 
 from phial.tool import run_tool

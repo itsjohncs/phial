@@ -1,4 +1,4 @@
-__all__ = ("simple_assets", )
+__all__ = ("assets", )
 
 # internal
 import phial.commands
@@ -14,25 +14,39 @@ import phial.loggers
 log = phial.loggers.get_logger(__name__)
 
 
-def simple_assets(*args, **kwargs):
-    command_queue = kwargs.pop("command_queue", phial.commands.global_queue)
-    if kwargs:
-        raise TypeError("Unknown keyword argument(s): " + ", ".join(kwargs.iterkeys()))
-
-    command_queue.enqueue(CopySimpleAssetsCommand(args))
+def assets(target, foreach, preformat=os.path.basename, command_queue=phial.commands.global_queue):
+    command_queue.enqueue(CopyAssetsCommand(target, foreach, preformat))
 
 
-class CopySimpleAssetsCommand(phial.commands.Command):
-    def __init__(self, paths):
-        self.paths = paths
+class CopyAssetsCommand(phial.commands.Command):
+    def __init__(self, target, foreach, preformat):
+        self.target = target
+        self.foreach = foreach
+        self.preformat = preformat
 
     def run(self, config):
-        for path in self.paths:
-            for i in glob.iglob(path):
-                try:
-                    phial.utils.makedirs(os.path.join(config["output"], os.path.dirname(i)))
-                except OSError:
-                    log.debug("Ignoring error making directory for {0}.", i, exc_info=True,
-                              exc_ignored=True)
+        if isinstance(self.foreach, basestring):
+            foreach = glob.iglob(self.foreach)
+        else:
+            foreach = self.foreach
 
-                shutil.copy2(i, os.path.join(config["output"], i))
+        for i in foreach:
+            if not os.path.exists(i):
+                log.die("Unknown file {0!s} given as source for asset.", i)
+
+            preformatted = self.preformat(i)
+
+            try:
+                resolved_target = self.target.format(preformatted)
+            except Exception as e:
+                # TODO(brownhead): This log message could use some improvement.
+                log.die("Could not resolve target path {0!s} for asset {1!s}", self.target,
+                        i, exc_info=True)
+
+            try:
+                phial.utils.makedirs(os.path.join(config["output"], os.path.dirname(i)))
+            except OSError:
+                log.debug("Ignoring error making directory for {0}.", i, exc_info=True,
+                          exc_ignored=True)
+
+            shutil.copy2(i, os.path.join(config["output"], i))
