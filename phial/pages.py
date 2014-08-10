@@ -1,4 +1,4 @@
-__all__ = ("page", "multipage", "basename_noext", )
+__all__ = ("page", "pages", "basename_noext", )
 
 # stdlib
 import codecs
@@ -15,6 +15,10 @@ log = phial.loggers.get_logger(__name__)
 
 
 def page(target, command_queue=phial.commands.global_queue):
+    # TODO(brownhead): Give a good error if it looks like the user is trying to use @pages instead.
+    # This can be done by checking to see if the command queue supports the .enqueue() member
+    # function, or by checking to see if it inherits from the one in phial.commands. While the
+    # former feels more pythonic, the latter would be a little more resiliant.
     def real_decorator(function):
         command_queue.enqueue(BuildPageCommand(function, target))
         return function
@@ -26,8 +30,7 @@ def basename_noext(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
-def multipage(target, foreach, preformat=basename_noext,
-              command_queue=phial.commands.global_queue):
+def pages(target, foreach, preformat=basename_noext, command_queue=phial.commands.global_queue):
     def real_decorator(function):
         command_queue.enqueue(BuildMultiplePagesCommand(function, target, foreach, preformat))
         return function
