@@ -1,6 +1,6 @@
 import phial
 
-phial.assets("styles.css", "images/*")
+phial.assets("./", "css/*")
 
 cats = []
 
