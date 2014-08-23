@@ -1,6 +1,6 @@
 import phial
 
-phial.assets("./", "css/*")
+phial.assets("css/{0}", foreach="css/*")
 
 cats = []
 

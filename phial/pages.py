@@ -53,12 +53,11 @@ class BuildPageCommand(phial.commands.Command):
 
             try:
                 resolved_target = self.target.format(preformatted)
-            except Exception as e:
-                log.die("Could not resolve target path {0!r} for page function {1!r} "
-                        "(item = {2!r})", self.target, self.function, i, exc_info=True)
+            except Exception:
+                log.fatal("Could not resolve target path {0!r} for page function {1!r} "
+                          "(item = {2!r})", self.target, self.function, i, exc_info=True)
 
             self._write_page(config, self.function(resolved_target, i), resolved_target)
-
 
     def _write_page(self, config, output, target):
         if output is None:
@@ -68,8 +67,8 @@ class BuildPageCommand(phial.commands.Command):
 
         output_path = os.path.join(config["output"], target)
         if not phial.utils.is_path_under_directory(output_path, config["output"]):
-            log.die("Page's target path must be relative and under the output directory. Did you "
-                    "begin the path with a / or .. ?")
+            log.fatal("Page's target path must be relative and under the output directory. Did "
+                      "you begin the path with a / or .. ?")
 
         try:
             phial.utils.makedirs(os.path.join(config["output"], os.path.dirname(output_path)))
@@ -86,4 +85,4 @@ class BuildPageCommand(phial.commands.Command):
             with open(output_path, "wb") as f:
                 f.write(output)
         else:
-            log.die("Page function must return str or unicode instance, got {0!r}.", output)
+            log.fatal("Page function must return str or unicode instance, got {0!r}.", output)

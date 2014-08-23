@@ -314,7 +314,7 @@ def build_app(app_path, options):
         for i in commands.global_queue:
             i.run(vars(options))
     except Exception as e:
-        show_tb = not isinstance(e, phial.loggers.LoggedDeath)
+        show_tb = not isinstance(e, phial.loggers.FatalError)
         log.warning("Failed to build app.", exc_info=show_tb)
 
 

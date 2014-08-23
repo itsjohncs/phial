@@ -32,21 +32,22 @@ class CopyAssetsCommand(phial.commands.Command):
 
         for i in foreach:
             if not os.path.exists(i):
-                log.die("Unknown file {0!s} given as source for asset.", i)
+                log.fatal("Unknown file {0!s} given as source for asset.", i)
 
             preformatted = self.preformat(i)
 
             try:
                 resolved_target = self.target.format(preformatted)
-            except Exception as e:
+            except Exception:
                 # TODO(brownhead): This log message could use some improvement.
-                log.die("Could not resolve target path {0!s} for asset {1!s}", self.target,
-                        i, exc_info=True)
+                log.fatal("Could not resolve target path {0!s} for asset {1!s}", self.target,
+                          i, exc_info=True)
 
             try:
-                phial.utils.makedirs(os.path.join(config["output"], os.path.dirname(i)))
+                phial.utils.makedirs(
+                    os.path.join(config["output"], os.path.dirname(resolved_target)))
             except OSError:
-                log.debug("Ignoring error making directory for {0}.", i, exc_info=True,
-                          exc_ignored=True)
+                log.debug("Ignoring error making directory for {0}.", resolved_target,
+                          exc_info=True, exc_ignored=True)
 
-            shutil.copy2(i, os.path.join(config["output"], i))
+            shutil.copy2(i, os.path.join(config["output"], resolved_target))

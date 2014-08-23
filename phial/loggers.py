@@ -1,7 +1,6 @@
 # stdlib
 import StringIO
 import traceback
-import sys
 import logging
 import string
 import re
@@ -37,7 +36,6 @@ class DifferentFormatter(object):
             # to the parser.
             converted = self.ZERO_LENGTH_RE.sub(repl, format_string)
             return string.Formatter.parse(self, converted)
-
 
     DEFAULT_STYLESHEET = {
         "default": [],
@@ -118,6 +116,8 @@ class DifferentFormatter(object):
     def highlight_tb(self, tb, base_classnames):
         FILE_LINE_RE = re.compile(r'^  File (".+"), line ([0-9]+), in (.*)$',
                                   re.MULTILINE | re.UNICODE)
+        FOOTER_LINE_RE = re.compile(r"^(\w+)(.*)$", re.MULTILINE | re.UNICODE)
+
         def repl_file_line(match):
             return '  File {0}, line {1}, in {2}'.format(
                 self.style_text(self.stylesheet, ["tb_path"], base_classnames, match.group(1)),
@@ -125,9 +125,8 @@ class DifferentFormatter(object):
                 match.group(3)
             )
 
-        FOOTER_LINE_RE = re.compile(r"^(\w+)(.*)$", re.MULTILINE | re.UNICODE)
         def repl_footer_line(match):
-            return self.style_text(self.stylesheet, ["tb_exc_name"], base_classnames, 
+            return self.style_text(self.stylesheet, ["tb_exc_name"], base_classnames,
                                    match.group(1)) + match.group(2)
 
         lines = tb.split("\n")

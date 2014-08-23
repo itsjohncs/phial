@@ -41,7 +41,7 @@ class BuildPipelineCommand(phial.commands.Command):
         for i in result.contents:
             output_path = os.path.join(config["output"], i.name)
             if not phial.utils.is_path_under_directory(output_path, config["output"]):
-                log.die(
+                log.fatal(
                     "Target path must be relative and under the output directory. Did you begin "
                     "the path with a / or .. ?")
 
