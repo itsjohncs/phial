@@ -173,7 +173,7 @@ def setup_logging(verbose):
     phial_logger.setLevel(log_level)
 
     handler = logging.StreamHandler()
-    handler.setFormatter(phial.loggers.LogFormatter())
+    handler.setFormatter(phial.loggers.DifferentFormatter())
     phial_logger.addHandler(handler)
 
     # We have to wait for the logger to be initialized to log this
