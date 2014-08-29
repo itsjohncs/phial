@@ -5,6 +5,7 @@ import shutil
 import sys
 import glob
 import os.path
+import subprocess
 
 # internal
 import phial.utils
@@ -68,6 +69,20 @@ class PipelineSource(object):
 
     def __repr__(self):
         return self.__class__.__name__ + "(" + repr(self.contents) + ")"
+
+
+class run(object):
+    def __init__(self, output_name, args):
+        self.args = args
+        self.output_name = output_name
+
+    def __call__(self, contents):
+        p = subprocess.Popen(self.args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        stdout = p.communicate("".join(i.read() for i in contents))[0]
+
+        result = phial.utils.TemporaryFile(name=self.output_name)
+        result.write(stdout)
+        return [result]
 
 
 class concat(object):
