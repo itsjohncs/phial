@@ -72,12 +72,14 @@ class PipelineSource(object):
 
 
 class run(object):
-    def __init__(self, output_name, args):
+    def __init__(self, output_name, args, popen_kwargs=None):
         self.args = args
         self.output_name = output_name
+        self.popen_kwargs = popen_kwargs or {}
 
     def __call__(self, contents):
-        p = subprocess.Popen(self.args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        p = subprocess.Popen(self.args, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
+                             **self.popen_kwargs)
         stdout = p.communicate("".join(i.read() for i in contents))[0]
 
         result = phial.utils.TemporaryFile(name=self.output_name)
