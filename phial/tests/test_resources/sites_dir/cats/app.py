@@ -5,6 +5,11 @@ phial.assets("css/{0}", foreach="css/*")
 cats = []
 
 
+@phial.pipeline("js/*")
+def js(source):
+	return source | phial.concat("concat.js")
+
+
 @phial.page("cats/{0}.htm", foreach="cats/*")
 def bio_page(target, item):
     frontmatter, content = phial.parse_frontmatter(item)
