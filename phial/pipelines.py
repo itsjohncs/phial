@@ -106,3 +106,12 @@ class cout(object):
         for i in contents:
             shutil.copyfileobj(i, self.out)
         return contents
+
+class move(object):
+    def __init__(self, to):
+        self.to = to
+
+    def __call__(self, contents):
+        for i in contents:
+            i = os.path.join(self.to, i)
+        return contents
