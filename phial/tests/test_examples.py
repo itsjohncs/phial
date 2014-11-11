@@ -1,5 +1,4 @@
 # internal
-from .test_resources import sites
 from .. import tool
 
 # external
@@ -10,6 +9,43 @@ import multiprocessing
 import tempfile
 import shutil
 import os
+
+
+# stdlib
+import pkg_resources
+import os
+
+
+def locate_example(name=None):
+    """Returns an examples location on the filesystem.
+
+    This function will extract the site's directory if necessary (which might be the case if we're
+    in a zip file).
+
+    If ``None`` is given for ``name``, a path to the ``sites_dir/`` directory
+    will be returned.
+    """
+    examples_dir = pkg_resources.resource_filename("phial", "examples")
+    if not os.path.exists(examples_dir):
+        raise RuntimeError("Could not find example directory at {0}.".format(examples_dir))
+
+    if name is None:
+        return examples_dir
+    else:
+        result = os.path.join(examples_dir, name)
+        if not os.path.exists(result):
+            raise ValueError("Could not find site {0}.".format(name))
+
+        return result
+
+
+def list_examples():
+    """Return a list of all of the examples available.
+
+    >>> list_examples()
+    ["simple", "readme"]
+    """
+    return os.listdir(locate_example())
 
 
 def recursive_compare(dir1, dir2):
@@ -43,13 +79,13 @@ def recursive_compare(dir1, dir2):
 
 
 class TestSites:
-    @pytest.mark.parametrize("site_name", sites.list_sites())
+    @pytest.mark.parametrize("site_name", list_examples())
     def test_output_matches(self, site_name):
         """Ensure the output of the site is what we expect."""
         temp_dir = tempfile.mkdtemp()
         try:
             copied_site_dir = os.path.join(temp_dir, "site")
-            shutil.copytree(sites.get_site_dir(site_name), copied_site_dir)
+            shutil.copytree(locate_example(site_name), copied_site_dir)
 
             def chdir_and_runtool(*args, **kwargs):
                 os.chdir(copied_site_dir)
