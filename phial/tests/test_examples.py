@@ -26,7 +26,7 @@ def locate_example(name=None):
     will be returned.
     """
     examples_dir = pkg_resources.resource_filename("phial", "examples")
-    if not os.path.exists(examples_dir):
+    if not os.path.isdir(examples_dir):
         raise RuntimeError("Could not find example directory at {0}.".format(examples_dir))
 
     if name is None:
@@ -45,7 +45,8 @@ def list_examples():
     >>> list_examples()
     ["simple", "readme"]
     """
-    return os.listdir(locate_example())
+    example_dir = locate_example()
+    return [i for i in os.listdir(example_dir) if os.path.isdir(os.path.join(example_dir, i))]
 
 
 def recursive_compare(dir1, dir2):

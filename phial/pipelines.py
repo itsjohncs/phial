@@ -46,6 +46,9 @@ class BuildPipelineCommand(phial.commands.Command):
                     "Target path must be relative and under the output directory. Did you begin "
                     "the path with a / or .. ?")
 
+            # Ensure that the target directory exists
+            phial.utils.makedirs(os.path.dirname(output_path))
+
             shutil.copyfileobj(i, phial.documents.unicodify_file_object(open(output_path, "w")))
 
 
@@ -106,6 +109,7 @@ class cout(object):
         for i in contents:
             shutil.copyfileobj(i, self.out)
         return contents
+
 
 class move(object):
     def __init__(self, to):

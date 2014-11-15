@@ -1,8 +1,10 @@
 import phial
 
-phial.assets("css/{0}", foreach="css/*")
-
 cats = []
+
+@phial.pipeline("css/*")
+def css(source):
+	return source
 
 
 @phial.pipeline("js/*")

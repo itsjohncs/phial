@@ -7,6 +7,5 @@ from phial.pages import *
 from phial.documents import *
 from phial.utils import *
 from phial.pipelines import *
-from phial.simple_assets import *
 
 from phial.tool import run_tool
