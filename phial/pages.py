@@ -20,10 +20,6 @@ def basename_noext(path):
 
 def page(target, foreach=None, preformat=basename_noext,
          command_queue=phial.commands.global_queue):
-    # TODO(brownhead): Give a good error if it looks like the user is trying to use @pages instead.
-    # This can be done by checking to see if the command queue supports the .enqueue() member
-    # function, or by checking to see if it inherits from the one in phial.commands. While the
-    # former feels more pythonic, the latter would be a little more resiliant.
     def real_decorator(function):
         command_queue.enqueue(BuildPageCommand(function, target, foreach, preformat))
         return function
