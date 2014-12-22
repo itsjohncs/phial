@@ -17,26 +17,39 @@ import phial.loggers
 log = phial.loggers.get_logger(__name__)
 
 
-def pipeline(foreach, command_queue=phial.commands.global_queue):
+def pipeline(foreach, binary_mode=True, command_queue=phial.commands.global_queue):
     def real_decorator(function):
-        command_queue.enqueue(BuildPipelineCommand(function, foreach))
+        command_queue.enqueue(BuildPipelineCommand(function, foreach, binary_mode))
         return function
 
     return real_decorator
 
 
 class BuildPipelineCommand(phial.commands.Command):
-    def __init__(self, function, foreach):
+    def __init__(self, function, foreach, binary_mode):
         self.function = function
         self.foreach = foreach
+        self.binary_mode = binary_mode
 
     def run(self, config):
+        # Minor convenience so users don't have to wrap every path with square brackets
+        foreach_list = self.foreach
         if isinstance(self.foreach, basestring):
-            foreach = [phial.documents.open_file(i) for i in glob.iglob(self.foreach)]
-        else:
-            foreach = self.foreach
+            foreach_list = [self.foreach]
 
-        result = self.function(PipelineSource(foreach))
+        # Glob any strings in the list.
+        if self.binary_mode:
+            open_file = lambda path: open(path, "rb")
+        else:
+            open_file = phial.documents.open_file
+        globbed_foreach_list = []
+        for i in foreach_list:
+            if isinstance(i, basestring):
+                globbed_foreach_list += [open_file(path) for path in glob.iglob(i)]
+            else:
+                globbed_foreach_list.append(i)
+
+        result = self.function(PipelineSource(globbed_foreach_list))
         log.info("Pipe function {0!r} yielded {1!s} files.", self.function, len(result.contents))
 
         for i in result.contents:
@@ -49,7 +62,12 @@ class BuildPipelineCommand(phial.commands.Command):
             # Ensure that the target directory exists
             phial.utils.makedirs(os.path.dirname(output_path))
 
-            shutil.copyfileobj(i, phial.documents.unicodify_file_object(open(output_path, "w")))
+            if self.binary_mode:
+                output_file = open(output_path, "wb")
+            else:
+                output_file = phial.documents.unicodify_file_object(open(output_path, "w"))
+
+            shutil.copyfileobj(i, output_file)
 
 
 class PipelineSource(object):
