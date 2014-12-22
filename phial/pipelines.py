@@ -32,24 +32,13 @@ class BuildPipelineCommand(phial.commands.Command):
         self.binary_mode = binary_mode
 
     def run(self, config):
-        # Minor convenience so users don't have to wrap every path with square brackets
-        foreach_list = self.foreach
-        if isinstance(self.foreach, basestring):
-            foreach_list = [self.foreach]
-
-        # Glob any strings in the list.
         if self.binary_mode:
             open_file = lambda path: open(path, "rb")
         else:
             open_file = phial.documents.open_file
-        globbed_foreach_list = []
-        for i in foreach_list:
-            if isinstance(i, basestring):
-                globbed_foreach_list += [open_file(path) for path in glob.iglob(i)]
-            else:
-                globbed_foreach_list.append(i)
 
-        result = self.function(PipelineSource(globbed_foreach_list))
+        globbed_foreach = phial.utils.glob_foreach_list(self.foreach, open_file)
+        result = self.function(PipelineSource(globbed_foreach))
         log.info("Pipe function {0!r} yielded {1!s} files.", self.function, len(result.contents))
 
         for i in result.contents:

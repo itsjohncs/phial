@@ -1,6 +1,7 @@
 __all__ = ("TemporaryFile", )
 
 # stdlib
+import glob
 import os.path
 import tempfile
 
@@ -14,6 +15,28 @@ def is_path_under_directory(path, directory):
     directory = os.path.abspath(directory) + "/"
     path = os.path.abspath(path) + "/"
     return path.startswith(directory)
+
+
+def glob_foreach_list(foreach, maybe_open_file=lambda path: path):
+    """Unified handling of "foreach lists".
+
+    Phial functions that take in a "foreach" argument run that argument through this function to
+    make things a little more convenient to the user. The handling is straightforward and will
+    basically just glob any strings it finds.
+    """
+    listified = foreach
+    if isinstance(foreach, basestring):
+        listified = [foreach]
+
+    # Glob any strings in the list.
+    globbed_list = []
+    for i in listified:
+        if isinstance(i, basestring):
+            globbed_list += [maybe_open_file(path) for path in glob.iglob(i)]
+        else:
+            globbed_list.append(i)
+
+    return globbed_list
 
 
 class TemporaryFile(tempfile.SpooledTemporaryFile):

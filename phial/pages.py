@@ -39,10 +39,7 @@ class BuildPageCommand(phial.commands.Command):
             self._write_page(config, self.function(), self.target)
             return
 
-        if isinstance(self.foreach, basestring):
-            foreach = glob.iglob(self.foreach)
-        else:
-            foreach = self.foreach
+        foreach = phial.utils.glob_foreach_list(self.foreach)
 
         for i in foreach:
             preformatted = self.preformat(i)
