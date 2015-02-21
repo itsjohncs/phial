@@ -2,14 +2,15 @@ import phial
 
 cats = []
 
+
 @phial.pipeline("css/*")
 def css(source):
-	return source
+    return source
 
 
 @phial.pipeline("js/*")
 def js(source):
-	return source | phial.concat("concat.js")
+    return source | phial.concat("concat.js")
 
 
 @phial.page("cats/{0}.htm", foreach="cats/*")

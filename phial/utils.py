@@ -1,9 +1,25 @@
-__all__ = ("TemporaryFile", )
-
 # stdlib
 import glob
 import os.path
+import sys
 import tempfile
+
+
+def public(f):
+    """"Use a decorator to avoid retyping function/class names.
+
+    * Grabbed from recipe by Sam Denton
+    http://code.activestate.com/recipes/576993-public-decorator-adds-an-item-to-__all__/
+    * Based on an idea by Duncan Booth:
+    http://groups.google.com/group/comp.lang.python/msg/11cbb03e09611b8a
+    * Improved via a suggestion by Dave Angel:
+    http://groups.google.com/group/comp.lang.python/msg/3d400fb22d8a42e1
+    """
+    all = sys.modules[f.__module__].__dict__.setdefault('__all__', [])
+    if f.__name__ not in all:  # Prevent duplicates if run from an IDE.
+        all.append(f.__name__)
+    return f
+public(public)
 
 
 def is_path_under_directory(path, directory):
@@ -39,6 +55,7 @@ def glob_foreach_list(foreach, maybe_open_file=lambda path: path):
     return globbed_list
 
 
+@public
 class TemporaryFile(tempfile.SpooledTemporaryFile):
     DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024  # 1024 * 1024 is one mebibyte
 

@@ -1,8 +1,5 @@
-__all__ = ("page", "basename_noext", )
-
 # stdlib
 import codecs
-import glob
 import os.path
 
 # internal
@@ -14,10 +11,12 @@ import phial.loggers
 log = phial.loggers.get_logger(__name__)
 
 
+@phial.utils.public
 def basename_noext(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
+@phial.utils.public
 def page(target, foreach=None, preformat=basename_noext,
          command_queue=phial.commands.global_queue):
     def real_decorator(function):

@@ -1,9 +1,6 @@
-__all__ = ("pipeline", "concat", "cout", )
-
 # stdlib
 import shutil
 import sys
-import glob
 import os.path
 import subprocess
 
@@ -17,6 +14,7 @@ import phial.loggers
 log = phial.loggers.get_logger(__name__)
 
 
+@phial.utils.public
 def pipeline(foreach, binary_mode=True, command_queue=phial.commands.global_queue):
     def real_decorator(function):
         command_queue.enqueue(BuildPipelineCommand(function, foreach, binary_mode))
@@ -33,7 +31,8 @@ class BuildPipelineCommand(phial.commands.Command):
 
     def run(self, config):
         if self.binary_mode:
-            open_file = lambda path: open(path, "rb")
+            def open_file(path):
+                return open(path, "rb")
         else:
             open_file = phial.documents.open_file
 
@@ -97,6 +96,7 @@ class run(object):
         return [result]
 
 
+@phial.utils.public
 class concat(object):
     def __init__(self, output_name=None):
         self.output_name = output_name
@@ -108,6 +108,7 @@ class concat(object):
         return [result]
 
 
+@phial.utils.public
 class cout(object):
     def __init__(self, out=sys.stdout):
         self.out = sys.stdout

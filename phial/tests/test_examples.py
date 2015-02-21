@@ -6,14 +6,10 @@ import pytest
 
 # stdlib
 import multiprocessing
-import tempfile
-import shutil
 import os
-
-
-# stdlib
 import pkg_resources
-import os
+import shutil
+import tempfile
 
 
 def locate_example(name=None):

@@ -385,7 +385,10 @@ def run_tool(*args):
     main(list(args))
 
 
-def _main(options, arguments, deletion_list):
+# NOTE(brownhead): The noqa here is because the complexity of this function is too high. I think
+#     this is appropriate for the sort of thing this function is doing though, so going to ignore
+#     it for now. Not against splitting this function up in the future though!
+def _main(options, arguments, deletion_list):  # noqa
     app_path = os.path.abspath(arguments[0])
 
     setup_logging(options.verbose)
@@ -421,7 +424,8 @@ def _main(options, arguments, deletion_list):
         dont_watch_list.append(options.output)
 
     # We'll pass this callback function to our monitor routine
-    callback = lambda: fork_and_build_app(app_path, options)
+    def callback():
+        fork_and_build_app(app_path, options)
 
     # Build the app before we go into monitor mode, also takes care of building
     # it if we're not going into monitor mode at all.

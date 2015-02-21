@@ -1,5 +1,3 @@
-__all__ = ("detect_encoding", "open_file", "parse_frontmatter", "unicodify_file_object", )
-
 # stdlib
 import codecs
 import shutil
@@ -26,6 +24,7 @@ class UnicodeSafeLoader(yaml.SafeLoader):
     }
 
 
+@phial.utils.public
 def detect_encoding(path):
     """Return encoding of file at path.
 
@@ -66,6 +65,7 @@ def detect_encoding(path):
     return file_encoding
 
 
+@phial.utils.public
 def open_file(path, mode="r"):
     """Open a file with the correct encoding.
 
@@ -85,6 +85,7 @@ def open_file(path, mode="r"):
 
 
 # TODO(brownhead): I don't think emit is really the right verb here.
+@phial.utils.public
 def unicodify_file_object(file_object, encoding="utf_8"):
     """Wrap a file object to accept and emit unicode.
 
@@ -101,6 +102,7 @@ def unicodify_file_object(file_object, encoding="utf_8"):
                                      info.streamwriter, "strict")
 
 
+@phial.utils.public
 def parse_frontmatter(document):
     """Parse a document's frontmatter and contents.
 

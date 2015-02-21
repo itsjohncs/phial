@@ -59,7 +59,8 @@ class DifferentFormatter(object):
     @staticmethod
     def style_text(stylesheet, styles, base_styles, text):
         # Form up the sequences we'll use to color the text.
-        ansify = lambda codes: u"\x1B[" + u";".join(map(str, [0] + codes)) + u"m"
+        def ansify(codes):
+            return u"\x1B[" + u";".join(map(str, [0] + codes)) + u"m"
         prefix = ansify(sum([stylesheet[i] for i in base_styles + styles], []))
         postfix = ansify(sum([stylesheet[i] for i in base_styles], []))
 
