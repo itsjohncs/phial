@@ -55,24 +55,19 @@ def recursive_compare(dir1, dir2):
     dir1_files = set(get_all_files(dir1))
     dir2_files = set(get_all_files(dir2))
 
-    if dir1_files.symmetric_difference(dir2_files):
-        return False
+    # Both directories should have the same listing of files
+    assert not dir1_files.symmetric_difference(dir2_files)
 
-    common = dir1_files.intersection(dir2_files)
-    for i in common:
+    for i in dir1_files:
         path1 = os.path.join(dir1, i)
         path2 = os.path.join(dir2, i)
 
         isdir1 = os.path.isdir(path1)
         isdir2 = os.path.isdir(path2)
-        if isdir1 != isdir2:
-            return False
+        assert isdir1 == isdir2
 
-        if (not isdir1 and not isdir2 and
-                open(path1).read() != open(path2).read()):
-            return False
-
-    return True
+        if not isdir1:
+            assert open(path1).read() == open(path2).read()
 
 
 class TestSites:
@@ -99,6 +94,6 @@ class TestSites:
                                                 "expected_output")
 
             assert os.path.isdir(output_path)
-            assert recursive_compare(output_path, expected_output_path)
+            recursive_compare(output_path, expected_output_path)
         finally:
             shutil.rmtree(temp_dir)
