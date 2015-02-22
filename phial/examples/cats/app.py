@@ -25,6 +25,7 @@ def bio_page(target, item):
 
 @phial.page("index.htm")
 def main_page():
+    sorted_cats = sorted(cats, key=lambda cat: cat["name"])
     links = "".join(['<li><a href="{target}">{name}</a></li>'.format(**i) for i in cats])
 
     template = phial.open_file("main_template.htm").read()
