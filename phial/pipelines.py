@@ -36,8 +36,11 @@ class BuildPipelineCommand(phial.commands.Command):
         else:
             open_file = phial.documents.open_file
 
-        globbed_foreach = phial.utils.glob_foreach_list(self.foreach, open_file)
-        result = self.function(PipelineSource(globbed_foreach))
+        # Glob and open all of the files the user specified
+        globbed_foreach = phial.utils.glob_foreach_list(self.foreach)
+        files = [open_file(path) for path in globbed_foreach]
+
+        result = self.function(PipelineSource(files))
         log.info("Pipe function {0!r} yielded {1!s} files.", self.function, len(result.contents))
 
         for i in result.contents:

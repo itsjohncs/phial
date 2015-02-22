@@ -33,12 +33,19 @@ def is_path_under_directory(path, directory):
     return path.startswith(directory)
 
 
-def glob_foreach_list(foreach, maybe_open_file=lambda path: path):
-    """Unified handling of "foreach lists".
+def glob_foreach_list(foreach):
+    """Globs a path/paths and return the flattened result.
 
-    Phial functions that take in a "foreach" argument run that argument through this function to
-    make things a little more convenient to the user. The handling is straightforward and will
-    basically just glob any strings it finds.
+    :param foreach: The path(s) to glob.
+    :type foreach: list, str, or unicode
+    :return: The sorted list of paths.
+
+    :Example:
+
+    >>> glob_foreach_list(["b/*", "a"])
+    ["a", "b/1", "b/2"]
+    >>> glob_foreach_list("b/*")
+    ["b/1", "b/2"]
     """
     listified = foreach
     if isinstance(foreach, basestring):
@@ -48,11 +55,11 @@ def glob_foreach_list(foreach, maybe_open_file=lambda path: path):
     globbed_list = []
     for i in listified:
         if isinstance(i, basestring):
-            globbed_list += [maybe_open_file(path) for path in glob.iglob(i)]
+            globbed_list += glob.glob(i)
         else:
             globbed_list.append(i)
 
-    return globbed_list
+    return sorted(globbed_list)
 
 
 @public
