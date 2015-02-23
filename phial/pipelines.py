@@ -122,6 +122,7 @@ class cout(object):
         return contents
 
 
+@phial.utils.public
 class move(object):
     def __init__(self, to):
         self.to = to
