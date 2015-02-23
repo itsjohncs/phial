@@ -13,20 +13,22 @@ def js(source):
     return source | phial.concat("concat.js")
 
 
-@phial.page("cats/{0}.htm", foreach="cats/*")
-def bio_page(target, item):
-    frontmatter, content = phial.parse_frontmatter(item)
+@phial.page("cats/*")
+def bio_page(source_file):
+    template = open("bio_template.htm").read()
+    frontmatter, content = phial.parse_frontmatter(source_file)
 
-    cats.append({"target": target, "name": frontmatter["name"]})
+    # HACK(brownhead): #22 aims to find a better solution to this.
+    cats.append({"target": source_file.name, "name": frontmatter["name"]})
 
-    template = phial.open_file("bio_template.htm").read()
-    return template.format(content=content.read(), **frontmatter)
+    output = template.format(content=content.read(), **frontmatter)
+    return phial.file(name=source_file.name, content=output)
 
 
-@phial.page("index.htm")
+@phial.page
 def main_page():
     sorted_cats = sorted(cats, key=lambda cat: cat["name"])
     links = "".join(['<li><a href="{target}">{name}</a></li>'.format(**i) for i in sorted_cats])
 
-    template = phial.open_file("main_template.htm").read()
-    return template.format(links=links)
+    template = open("main_template.htm").read()
+    return phial.file(name="index.htm", content=template.format(links=links))

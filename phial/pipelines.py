@@ -131,3 +131,12 @@ class move(object):
         for i in contents:
             i = os.path.join(self.to, i)
         return contents
+
+
+@phial.utils.public
+class map(object):
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self, contents):
+        return [self.func(i) for i in contents]

@@ -1,6 +1,6 @@
-from phial import page
+import phial
 
 
-@page("index.htm")
+@phial.page
 def homepage():
-    return "Hello World!"
+    return phial.file(name="index.htm", content="Hello World!")
