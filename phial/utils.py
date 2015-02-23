@@ -63,13 +63,21 @@ def glob_foreach_list(foreach):
 
 
 @public
-class TemporaryFile(tempfile.SpooledTemporaryFile):
+class file(tempfile.SpooledTemporaryFile):
     DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024  # 1024 * 1024 is one mebibyte
 
-    def __init__(self, name=None, spool_size=DEFAULT_SPOOL_SIZE):
+    def __init__(self, name=None, spool_size=DEFAULT_SPOOL_SIZE, content=None):
+        print name, content
         self.name = name
         self.spool_size = spool_size
         tempfile.SpooledTemporaryFile.__init__(self, max_size=spool_size)
+        if content is not None:
+            self.write(content)
+            self.seek(0)
+
+
+# HACK(brownhead): I should stabilize on a single name.
+TemporaryFile = file
 
 
 def makedirs(path):
@@ -80,3 +88,8 @@ def makedirs(path):
         # a net win.
         if e.errno != 17 and os.path.isdir(path):
             raise
+
+
+@public
+def basename_noext(path):
+    return os.path.splitext(os.path.basename(path))[0]
