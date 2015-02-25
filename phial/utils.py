@@ -88,8 +88,3 @@ def makedirs(path):
         # a net win.
         if e.errno != 17 and os.path.isdir(path):
             raise
-
-
-@public
-def basename_noext(path):
-    return os.path.splitext(os.path.basename(path))[0]
