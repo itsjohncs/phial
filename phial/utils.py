@@ -36,6 +36,8 @@ def is_path_under_directory(path, directory):
 def glob_foreach_list(foreach):
     """Globs a path/paths and return the flattened result.
 
+    An IOError will be raised if no results are found for a particular glob.
+
     :param foreach: The path(s) to glob.
     :type foreach: list, str, or unicode
     :return: The sorted list of paths.
@@ -46,6 +48,8 @@ def glob_foreach_list(foreach):
     ["a", "b/1", "b/2"]
     >>> glob_foreach_list("b/*")
     ["b/1", "b/2"]
+    >>> glob_foreach_list([])
+    []
     """
     listified = foreach
     if isinstance(foreach, basestring):
@@ -55,7 +59,10 @@ def glob_foreach_list(foreach):
     globbed_list = []
     for i in listified:
         if isinstance(i, basestring):
-            globbed_list += glob.glob(i)
+            found = glob.glob(i)
+            if not found:
+                raise IOError("No files found matching glob {0!r}".format(i))
+            globbed_list += found
         else:
             globbed_list.append(i)
 

@@ -15,7 +15,7 @@ log = phial.loggers.get_logger(__name__)
 
 
 @phial.utils.public
-def pipeline(foreach, binary_mode=True, command_queue=phial.commands.global_queue):
+def pipeline(foreach=[], binary_mode=True, command_queue=phial.commands.global_queue):
     def real_decorator(function):
         command_queue.enqueue(BuildPipelineCommand(function, foreach, binary_mode))
         return function
