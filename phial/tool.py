@@ -35,15 +35,10 @@ def parse_arguments(args=sys.argv[1:]):
     )
 
     parser.add_option(
-        "-s", "--source", action="store", default=None, metavar="PATH", type="path",
-        help="The directory the source files are in. Defaults to ./source if it exists, "
-             "otherwise it defaults to your current directory."
-    )
-    parser.add_option(
         "-o", "--output", action="store", default="./output", metavar="PATH", type="path",
         help="The directory to build the site into (it will be created if it does not exist). "
              "The special value :temp: may be provided, in which case a temporary directory "
-             "will be used (it is destroyed when Phial exits). Defaults to %default."
+             "will be used (but is destroyed when Phial exits). Defaults to %default."
     )
     parser.add_option(
         "-e", "--output-encoding", action="store", default="utf_8",
@@ -56,8 +51,7 @@ def parse_arguments(args=sys.argv[1:]):
              "messages. By default, only errors and warnings are displayed."
     )
 
-    # optparse doesn't have native support for aliases so we use a callback
-    # here.
+    # optparse doesn't have native support for aliases so we use a callback here.
     def testing_callback(option, opt, value, parser):
         parser.values.output = ":temp:"
         parser.values.serve = True
@@ -84,20 +78,19 @@ def parse_arguments(args=sys.argv[1:]):
         default=[],
         help="Adds a file or directory to the watch list. The path provided will be globbed "
              "every time the list is checked. By default, the watch list will be populated with "
-             "the source directory as well as all of the unhidden files and directories in the "
-             "app script's directory. This default behavior can be disabled with "
-             "--no-watch-defaults."
+             "tall of the unhidden files and directories in the app script's directory. This "
+             "default behavior can be disabled with --no-watch-defaults."
     )
     monitor_options.add_option(
         "-W", "--dont-watch", action="append", dest="dont_watch_list", metavar="PATH", type="path",
         default=[],
         help="Adds a file or directory to the don't-watch list. The path provided will be "
-              "globbed every time the list is checked. If a file or directory exists in both the "
-              "watch list and the don't-watch list, it will not be watched. By default, the "
-              "output directory will be in the don't-watch list. This default behavior can be "
-              "disabled with --no-watch-defaults. This option exists because if your site "
-              "generates some files into a directory in the watch list Phial can get caught in a "
-              "loop where it will continually build your site over and over again."
+             "globbed every time the list is checked. If a file or directory exists in both the "
+             "watch list and the don't-watch list, it will not be watched. By default, the "
+             "output directory will be in the don't-watch list. This default behavior can be "
+             "disabled with --no-watch-defaults. This option exists because if your site "
+             "generates some files into a directory in the watch list Phial can get caught in a "
+             "loop where it will continually build your site over and over again."
     )
     monitor_options.add_option(
         "--no-watch-defaults", action="store_false", default=True, dest="watch_defaults",
@@ -106,7 +99,8 @@ def parse_arguments(args=sys.argv[1:]):
     monitor_options.add_option(
         "--watch-poll-frequency", action="store", default="1",
         help="The amount of time to wait in between polling for changes. Measured in seconds (can "
-             "be a floating point value). Defaults to %default."
+             "be a non-integer like 2.4, irrational numbers are not allowed). Defaults to "
+             "%default."
     )
 
     server_options = OptionGroup(
@@ -127,7 +121,7 @@ def parse_arguments(args=sys.argv[1:]):
         "--serve-host", action="store", default="localhost", metavar="HOST",
         help="The host to serve requests on. This will determine the network device that is "
              "listened to. You almost certainly want to leave this on the default setting as "
-             "exposing the server publicly using the built-in HTTP server could cause a security "
+             "exposing the built-in HTTP server to the outside world could cause a security "
              "issue. Defaults to %default."
     )
 
@@ -143,7 +137,7 @@ def parse_arguments(args=sys.argv[1:]):
         "--index-path", action="store", default=".phial_index", dest="index_path", metavar="PATH",
         type="path",
         help="Where to store the index file. This is a path relative to the output directory "
-             "(though it can also be an absolute path). Defaults to %default."
+             "(though it can also be an absolute path outside of it). Defaults to %default."
     )
     index_options.add_option(
         "--no-index", action="store_const", const=None, dest="index_path",
@@ -284,10 +278,11 @@ def monitor(watch_list, dont_watch_list, wait_time, callback):
 def build_app(app_path, options):
     """Build the app.
 
-    Will import the application in the current process and change the directory so the forking
-    verision of this function is probably what you want.
+    Will import the application in the current process so the foring version of this function is
+    probably what you want.
     """
-    os.chdir(options.source)
+    app_dir = os.path.dirname(app_path)
+    os.chdir(app_dir)
 
     # Try and import the user's application
     try:
@@ -302,7 +297,7 @@ def build_app(app_path, options):
 
     try:
         log.info("Building application from sources in {0} to output directory {1}.",
-                 options.source, options.output)
+                 app_dir, options.output)
 
         try:
             phial.utils.makedirs(options.output)
@@ -396,12 +391,6 @@ def _main(options, arguments, deletion_list):  # noqa
     log.debug("Parsed command line arguments. arguments = {0!r}, options = {1!r}.", arguments,
               vars(options))
 
-    if options.source is None:
-        if os.path.isdir("./source"):
-            options.source = os.path.abspath("./source")
-        else:
-            options.source = os.path.abspath(".")
-
     if options.output == ":temp:":
         temp_dir = tempfile.mkdtemp()
         deletion_list.append(temp_dir)
@@ -418,8 +407,6 @@ def _main(options, arguments, deletion_list):  # noqa
         if not app_dir:
             app_dir = "."
         watch_list.append(app_dir)
-
-        watch_list.append(options.source)
 
         dont_watch_list.append(options.output)
 
