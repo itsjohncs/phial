@@ -6,7 +6,7 @@ import subprocess
 
 # internal
 import phial.utils
-import phial.commands
+import phial.tasks
 import phial.documents
 
 # set up logging
@@ -15,15 +15,15 @@ log = phial.loggers.get_logger(__name__)
 
 
 @phial.utils.public
-def pipeline(foreach=[], binary_mode=True, command_queue=phial.commands.global_queue):
+def pipeline(foreach=[], binary_mode=True, task_queue=phial.tasks.global_queue):
     def real_decorator(function):
-        command_queue.enqueue(BuildPipelineCommand(function, foreach, binary_mode))
+        task_queue.enqueue(PipelineTask(function, foreach, binary_mode))
         return function
 
     return real_decorator
 
 
-class BuildPipelineCommand(phial.commands.Command):
+class PipelineTask(phial.tasks.Task):
     def __init__(self, function, foreach, binary_mode):
         self.function = function
         self.foreach = foreach

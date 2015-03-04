@@ -15,7 +15,7 @@ import time
 import tempfile
 
 # internal
-from . import commands
+from . import tasks
 import phial.loggers
 import phial.utils
 
@@ -305,8 +305,8 @@ def build_app(app_path, options):
             log.debug("Ignoring error creating output directory at {0}.", options.output,
                       exc_info=True, exc_ignored=True)
 
-        log.debug("About to consume queue: {0!r}", list(commands.global_queue))
-        for i in commands.global_queue:
+        log.debug("About to consume queue: {0!r}", list(tasks.global_queue))
+        for i in tasks.global_queue:
             i.run(vars(options))
     except Exception as e:
         show_tb = not isinstance(e, phial.loggers.FatalError)

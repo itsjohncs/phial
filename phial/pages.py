@@ -1,5 +1,5 @@
 # internal
-import phial.commands
+import phial.tasks
 import phial.pipelines
 import phial.utils
 
@@ -9,13 +9,13 @@ log = phial.loggers.get_logger(__name__)
 
 
 @phial.utils.public
-def page(foreach=[], command_queue=phial.commands.global_queue):
+def page(foreach=[], task_queue=phial.tasks.global_queue):
     # We allow users to write @page without the (). This permits that.
     foreach_is_func = hasattr(foreach, "__call__")
 
     def real_decorator(function):
-        # Instead of "BuildPageCommands", we just reuse the pipeline infrastructure. This function
-        # will be given as a pipeline, which in turn will call the user's page function
+        # Instead of making a special page task, we just reuse the pipeline infrastructure. This
+        # function will be given as a pipeline, which in turn will call the user's page function
         # appropriately.
         def page_to_pipeline_adapter(source):
             if len(source.contents) == 0:
@@ -30,9 +30,8 @@ def page(foreach=[], command_queue=phial.commands.global_queue):
         if foreach_is_func:
             apparent_foreach = []
 
-        command = phial.pipelines.BuildPipelineCommand(page_to_pipeline_adapter, apparent_foreach,
-                                                       False)
-        command_queue.enqueue(command)
+        task = phial.pipelines.PipelineTask(page_to_pipeline_adapter, apparent_foreach, False)
+        task_queue.enqueue(task)
         return function
 
     if foreach_is_func:
