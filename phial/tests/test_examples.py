@@ -45,29 +45,37 @@ def list_examples():
     return [i for i in os.listdir(example_dir) if os.path.isdir(os.path.join(example_dir, i))]
 
 
-def recursive_compare(dir1, dir2):
-    """Return True iff dir1 and dir2 have the same contents. """
+def recursive_compare(actual, expected):
+    """Return True iff expected and actual have the same contents.
+
+    :param actual: Path of directory with actual file tree (using the local code).
+    :type expected: ``str``
+    :param expected: Path of directory with expected file tree.
+    :type expected: ``str``
+    :returns: ``None``
+    """
     def get_all_files(dir_path):
         for root, dirs, files in os.walk(dir_path):
             for name in files + dirs:
                 yield os.path.relpath(os.path.join(root, name), dir_path)
 
-    dir1_files = set(get_all_files(dir1))
-    dir2_files = set(get_all_files(dir2))
+    expected_files = set(get_all_files(expected))
+    actual_files = set(get_all_files(actual))
 
     # Both directories should have the same listing of files
-    assert not dir1_files.symmetric_difference(dir2_files)
+    assert not expected_files.symmetric_difference(actual_files)
 
-    for i in dir1_files:
-        path1 = os.path.join(dir1, i)
-        path2 = os.path.join(dir2, i)
+    for i in expected_files:
+        path_actual = os.path.join(actual, i)
+        path_expected = os.path.join(expected, i)
 
-        isdir1 = os.path.isdir(path1)
-        isdir2 = os.path.isdir(path2)
-        assert isdir1 == isdir2
+        isdir_expected = os.path.isdir(path_actual)
+        isdir_actual = os.path.isdir(path_expected)
+        assert isdir_expected == isdir_actual, "isDirectory mismatch at {0!r}".format(i)
 
-        if not isdir1:
-            assert open(path1).read() == open(path2).read()
+        if not isdir_expected:
+            assert open(path_actual).read() == open(path_expected).read(), (
+                "Content mismath at {0!r}".format(i))
 
 
 class TestSites:
