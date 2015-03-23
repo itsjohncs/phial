@@ -95,3 +95,8 @@ def makedirs(path):
         # a net win.
         if e.errno != 17 and os.path.isdir(path):
             raise
+
+
+@public
+def swap_extension(path, new_extension):
+    return os.path.splitext(path)[0] + new_extension

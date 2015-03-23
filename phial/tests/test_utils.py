@@ -28,3 +28,14 @@ class TestGlobForeachList:
     def test_not_found(self, tmpdir):
         with pytest.raises(IOError):
             phial.utils.glob_foreach_list("adsfasdf")
+
+    @pytest.mark.parametrize("path,new_extension,expected", [
+        ("joe.txt", ".html", "joe.html"),
+        ("joe", ".html", "joe.html"),
+        (".bashrc", ".html", ".bashrc.html"),
+        ("/var/log/apache.log", ".rst", "/var/log/apache.rst"),
+        ("styles/awesome.less", ".css", "styles/awesome.css"),
+    ])
+    def test_swap_extension(self, path, new_extension, expected):
+        print path, new_extension, expected
+        assert phial.utils.swap_extension(path, new_extension) == expected
