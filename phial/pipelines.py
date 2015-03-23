@@ -28,9 +28,8 @@ class PipelineTask(tasks.Task):
         self.function = function
         self.foreach = foreach
         self.binary_mode = binary_mode
-        self.id = id
         self.files = None
-        self.depends_on = depends_on
+        super(PipelineTask, self).__init__(id=id, depends_on=depends_on)
 
     def run(self, config):
         if self.binary_mode:
