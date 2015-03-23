@@ -1,7 +1,5 @@
 import phial
 
-cats = []
-
 
 @phial.pipeline("css/*")
 def css(source):
@@ -18,16 +16,19 @@ def bio_page(source_file):
     template = open("bio_template.htm").read()
     frontmatter, content = phial.parse_frontmatter(source_file)
 
-    # HACK(brownhead): #22 aims to find a better solution to this.
-    cats.append({"target": source_file.name, "name": frontmatter["name"]})
-
     output = template.format(content=content.read(), **frontmatter)
-    return phial.file(name=source_file.name, content=output)
+    return phial.file(
+        name=source_file.name,
+        metadata={"target": source_file.name, "name": frontmatter["name"]},
+        content=output)
 
 
 @phial.page
 def main_page():
-    sorted_cats = sorted(cats, key=lambda cat: cat["name"])
+    bio_task = phial.get_task(bio_page)
+    cat_links = [i.metadata for i in bio_task.files]
+
+    sorted_cats = sorted(cat_links, key=lambda link: link["name"])
     links = "".join(['<li><a href="{target}">{name}</a></li>'.format(**i) for i in sorted_cats])
 
     template = open("main_template.htm").read()

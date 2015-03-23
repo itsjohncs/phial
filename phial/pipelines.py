@@ -17,17 +17,19 @@ log = phial.loggers.get_logger(__name__)
 @utils.public
 def pipeline(foreach=[], binary_mode=True, task_queue=tasks.global_queue):
     def real_decorator(function):
-        task_queue.enqueue(PipelineTask(function, foreach, binary_mode))
+        task_queue.enqueue(PipelineTask(function, foreach, binary_mode, function))
         return function
 
     return real_decorator
 
 
 class PipelineTask(tasks.Task):
-    def __init__(self, function, foreach, binary_mode):
+    def __init__(self, function, foreach, binary_mode, id):
         self.function = function
         self.foreach = foreach
         self.binary_mode = binary_mode
+        self.id = id
+        self.files = None
 
     def run(self, config):
         if self.binary_mode:
@@ -43,7 +45,8 @@ class PipelineTask(tasks.Task):
         result = self.function(PipelineSource(files))
         log.info("Pipe function {0!r} yielded {1!s} files.", self.function, len(result.contents))
 
-        for i in result.contents:
+        self.files = list(result.contents)
+        for i in self.files:
             output_path = os.path.join(config["output"], i.name)
             if not utils.is_path_under_directory(output_path, config["output"]):
                 log.fatal(

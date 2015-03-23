@@ -73,9 +73,9 @@ def glob_foreach_list(foreach):
 class file(tempfile.SpooledTemporaryFile):
     DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024  # 1024 * 1024 is one mebibyte
 
-    def __init__(self, name=None, spool_size=DEFAULT_SPOOL_SIZE, content=None):
-        print name, content
+    def __init__(self, name=None, spool_size=DEFAULT_SPOOL_SIZE, metadata=None, content=None):
         self.name = name
+        self.metadata = metadata
         self.spool_size = spool_size
         tempfile.SpooledTemporaryFile.__init__(self, max_size=spool_size)
         if content is not None:

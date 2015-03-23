@@ -22,3 +22,12 @@ class TaskQueue(object):
 
 global_queue = TaskQueue()
 __all__.append("global_queue")  # noqa
+
+
+@utils.public
+def get_task(id):
+    for i in global_queue:
+        if i.id is id:
+            return i
+
+    return None

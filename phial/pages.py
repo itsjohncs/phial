@@ -30,7 +30,7 @@ def page(foreach=[], task_queue=tasks.global_queue):
         if foreach_is_func:
             apparent_foreach = []
 
-        task = pipelines.PipelineTask(page_to_pipeline_adapter, apparent_foreach, False)
+        task = pipelines.PipelineTask(page_to_pipeline_adapter, apparent_foreach, False, function)
         task_queue.enqueue(task)
         return function
 
