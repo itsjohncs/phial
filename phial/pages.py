@@ -1,15 +1,15 @@
 # internal
-import phial.tasks
-import phial.pipelines
-import phial.utils
+from . import tasks
+from . import pipelines
+from . import utils
 
 # set up logging
 import phial.loggers
 log = phial.loggers.get_logger(__name__)
 
 
-@phial.utils.public
-def page(foreach=[], task_queue=phial.tasks.global_queue):
+@utils.public
+def page(foreach=[], task_queue=tasks.global_queue):
     # We allow users to write @page without the (). This permits that.
     foreach_is_func = hasattr(foreach, "__call__")
 
@@ -22,7 +22,7 @@ def page(foreach=[], task_queue=phial.tasks.global_queue):
                 source.contents = [function()]
                 return source
             else:
-                return source | phial.pipelines.map(function) | phial.pipelines.cout()
+                return source | pipelines.map(function) | pipelines.cout()
 
         # If the user decorated this page with @page instead of @page(...), foreach will be the
         # same as function. In which case we should treat foreach as empty.
@@ -30,7 +30,7 @@ def page(foreach=[], task_queue=phial.tasks.global_queue):
         if foreach_is_func:
             apparent_foreach = []
 
-        task = phial.pipelines.PipelineTask(page_to_pipeline_adapter, apparent_foreach, False)
+        task = pipelines.PipelineTask(page_to_pipeline_adapter, apparent_foreach, False)
         task_queue.enqueue(task)
         return function
 

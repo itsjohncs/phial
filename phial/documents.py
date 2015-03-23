@@ -6,7 +6,7 @@ import shutil
 import yaml
 
 # internal
-import phial.utils
+from . import utils
 
 
 class UnicodeSafeLoader(yaml.SafeLoader):
@@ -24,7 +24,7 @@ class UnicodeSafeLoader(yaml.SafeLoader):
     }
 
 
-@phial.utils.public
+@utils.public
 def detect_encoding(path):
     """Return encoding of file at path.
 
@@ -65,7 +65,7 @@ def detect_encoding(path):
     return file_encoding
 
 
-@phial.utils.public
+@utils.public
 def open_file(path, mode="r"):
     """Open a file with the correct encoding.
 
@@ -85,7 +85,7 @@ def open_file(path, mode="r"):
 
 
 # TODO(brownhead): I don't think emit is really the right verb here.
-@phial.utils.public
+@utils.public
 def unicodify_file_object(file_object, encoding="utf_8"):
     """Wrap a file object to accept and emit unicode.
 
@@ -102,7 +102,7 @@ def unicodify_file_object(file_object, encoding="utf_8"):
                                      info.streamwriter, "strict")
 
 
-@phial.utils.public
+@utils.public
 def parse_frontmatter(document):
     """Parse a document's frontmatter and contents.
 
@@ -124,7 +124,7 @@ def parse_frontmatter(document):
 
     # Iterate through every line until we hit the end of the front
     # matter.
-    front_matter = unicodify_file_object(phial.utils.TemporaryFile())
+    front_matter = unicodify_file_object(utils.TemporaryFile())
     for line in document:
         assert isinstance(line, unicode)
 
@@ -143,7 +143,7 @@ def parse_frontmatter(document):
     front_matter.seek(0)
     decoded_front_matter = yaml.load(front_matter.read(), UnicodeSafeLoader)
 
-    content_file = unicodify_file_object(phial.utils.TemporaryFile())
+    content_file = unicodify_file_object(utils.TemporaryFile())
 
     shutil.copyfileobj(document, content_file)
 

@@ -5,17 +5,17 @@ import os.path
 import subprocess
 
 # internal
-import phial.utils
-import phial.tasks
-import phial.documents
+from . import utils
+from . import tasks
+from . import documents
 
 # set up logging
 import phial.loggers
 log = phial.loggers.get_logger(__name__)
 
 
-@phial.utils.public
-def pipeline(foreach=[], binary_mode=True, task_queue=phial.tasks.global_queue):
+@utils.public
+def pipeline(foreach=[], binary_mode=True, task_queue=tasks.global_queue):
     def real_decorator(function):
         task_queue.enqueue(PipelineTask(function, foreach, binary_mode))
         return function
@@ -23,7 +23,7 @@ def pipeline(foreach=[], binary_mode=True, task_queue=phial.tasks.global_queue):
     return real_decorator
 
 
-class PipelineTask(phial.tasks.Task):
+class PipelineTask(tasks.Task):
     def __init__(self, function, foreach, binary_mode):
         self.function = function
         self.foreach = foreach
@@ -34,10 +34,10 @@ class PipelineTask(phial.tasks.Task):
             def open_file(path):
                 return open(path, "rb")
         else:
-            open_file = phial.documents.open_file
+            open_file = documents.open_file
 
         # Glob and open all of the files the user specified
-        globbed_foreach = phial.utils.glob_foreach_list(self.foreach)
+        globbed_foreach = utils.glob_foreach_list(self.foreach)
         files = [open_file(path) for path in globbed_foreach]
 
         result = self.function(PipelineSource(files))
@@ -45,18 +45,18 @@ class PipelineTask(phial.tasks.Task):
 
         for i in result.contents:
             output_path = os.path.join(config["output"], i.name)
-            if not phial.utils.is_path_under_directory(output_path, config["output"]):
+            if not utils.is_path_under_directory(output_path, config["output"]):
                 log.fatal(
                     "Target path must be relative and under the output directory. Did you begin "
                     "the path with a / or .. ?")
 
             # Ensure that the target directory exists
-            phial.utils.makedirs(os.path.dirname(output_path))
+            utils.makedirs(os.path.dirname(output_path))
 
             if self.binary_mode:
                 output_file = open(output_path, "wb")
             else:
-                output_file = phial.documents.unicodify_file_object(open(output_path, "w"))
+                output_file = documents.unicodify_file_object(open(output_path, "w"))
 
             shutil.copyfileobj(i, output_file)
 
@@ -94,24 +94,24 @@ class run(object):
                              **self.popen_kwargs)
         stdout = p.communicate("".join(i.read() for i in contents))[0]
 
-        result = phial.utils.TemporaryFile(name=self.output_name)
+        result = utils.TemporaryFile(name=self.output_name)
         result.write(stdout)
         return [result]
 
 
-@phial.utils.public
+@utils.public
 class concat(object):
     def __init__(self, output_name=None):
         self.output_name = output_name
 
     def __call__(self, contents):
-        result = phial.utils.TemporaryFile(name=self.output_name)
+        result = utils.TemporaryFile(name=self.output_name)
         for i in contents:
             shutil.copyfileobj(i, result)
         return [result]
 
 
-@phial.utils.public
+@utils.public
 class cout(object):
     def __init__(self, out=sys.stdout):
         self.out = sys.stdout
@@ -122,7 +122,7 @@ class cout(object):
         return contents
 
 
-@phial.utils.public
+@utils.public
 class move(object):
     def __init__(self, to):
         self.to = to
@@ -133,7 +133,7 @@ class move(object):
         return contents
 
 
-@phial.utils.public
+@utils.public
 class map(object):
     def __init__(self, func):
         self.func = func

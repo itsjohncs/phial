@@ -16,10 +16,10 @@ import tempfile
 
 # internal
 from . import tasks
-import phial.loggers
-import phial.utils
+from . import loggers
+from . import utils
 
-log = phial.loggers.get_logger(__name__)
+log = loggers.get_logger(__name__)
 
 
 def parse_arguments(args=sys.argv[1:]):
@@ -167,7 +167,7 @@ def setup_logging(verbose):
     phial_logger.setLevel(log_level)
 
     handler = logging.StreamHandler()
-    handler.setFormatter(phial.loggers.DifferentFormatter())
+    handler.setFormatter(loggers.DifferentFormatter())
     phial_logger.addHandler(handler)
 
     # We have to wait for the logger to be initialized to log this
@@ -300,7 +300,7 @@ def build_app(app_path, options):
                  app_dir, options.output)
 
         try:
-            phial.utils.makedirs(options.output)
+            utils.makedirs(options.output)
         except OSError:
             log.debug("Ignoring error creating output directory at {0}.", options.output,
                       exc_info=True, exc_ignored=True)
@@ -309,7 +309,7 @@ def build_app(app_path, options):
         for i in tasks.global_queue:
             i.run(vars(options))
     except Exception as e:
-        show_tb = not isinstance(e, phial.loggers.FatalError)
+        show_tb = not isinstance(e, loggers.FatalError)
         log.warning("Failed to build app.", exc_info=show_tb)
 
 

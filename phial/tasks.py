@@ -1,11 +1,14 @@
-__all__ = ("TaskQueue", )
+# internal
+from . import utils
 
 
+@utils.public
 class Task(object):
     def run(self, config):
         pass
 
 
+@utils.public
 class TaskQueue(object):
     def __init__(self):
         self._queue = []
@@ -18,3 +21,4 @@ class TaskQueue(object):
 
 
 global_queue = TaskQueue()
+__all__.append("global_queue")  # noqa
