@@ -53,7 +53,10 @@ class TaskQueue(object):
 
         entry_points = set(self._queue)
         for i in self._queue:
-            entry_points -= set(i.get_dependencies())
+            entry_points -= set(self.get_task(id) for id in i.get_dependencies())
+
+        if len(entry_points) == 0:
+            raise RuntimeError("Cyclic dependency in tasks.")
 
         # Iterating through the list rather than the set allows us to keep the ordering
         # well-defined

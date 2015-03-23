@@ -33,7 +33,6 @@ class TestTasks:
 
     def test_topological_sort_cycle(self):
         tasks = [
-            Task(id=3, depends_on=2),
             Task(id=1, depends_on=2),
             Task(id=2, depends_on=1),
         ]
