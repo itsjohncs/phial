@@ -1,6 +1,7 @@
 # stdlib
 import codecs
 import shutil
+import tempfile
 
 # external
 import yaml
@@ -102,6 +103,28 @@ def unicodify_file_object(file_object, encoding="utf_8"):
                                      info.streamwriter, "strict")
 
 
+DEFAULT_SPOOL_SIZE = 10 * 1024 * 1024  # 1024 * 1024 is one mebibyte
+
+
+# TODO(brownhead): file is probably not the best name for this since it blows away a builtin.
+@utils.public
+def file(name=None, mode="w+b", spool_size=DEFAULT_SPOOL_SIZE, metadata=None, content=None,
+         encoding="utf_8"):
+    temp_file = tempfile.SpooledTemporaryFile(max_size=DEFAULT_SPOOL_SIZE, mode=mode)
+
+    # Wrap the temporary file to allow unicode
+    temp_file = unicodify_file_object(temp_file, encoding=encoding)
+
+    temp_file.name = name
+    temp_file.metadata = metadata
+
+    if content:
+        temp_file.write(content)
+        temp_file.seek(0)
+
+    return temp_file
+
+
 @utils.public
 def parse_frontmatter(document):
     """Parse a document's frontmatter and contents.
@@ -124,7 +147,7 @@ def parse_frontmatter(document):
 
     # Iterate through every line until we hit the end of the front
     # matter.
-    front_matter = unicodify_file_object(utils.TemporaryFile())
+    front_matter = file()
     for line in document:
         assert isinstance(line, unicode)
 
@@ -143,7 +166,7 @@ def parse_frontmatter(document):
     front_matter.seek(0)
     decoded_front_matter = yaml.load(front_matter.read(), UnicodeSafeLoader)
 
-    content_file = unicodify_file_object(utils.TemporaryFile())
+    content_file = file()
 
     shutil.copyfileobj(document, content_file)
 

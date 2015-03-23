@@ -97,7 +97,7 @@ class run(object):
                              **self.popen_kwargs)
         stdout = p.communicate("".join(i.read() for i in contents))[0]
 
-        result = utils.TemporaryFile(name=self.output_name)
+        result = documents.file(name=self.output_name)
         result.write(stdout)
         return [result]
 
@@ -108,7 +108,7 @@ class concat(object):
         self.output_name = output_name
 
     def __call__(self, contents):
-        result = utils.TemporaryFile(name=self.output_name)
+        result = documents.file(name=self.output_name)
         for i in contents:
             shutil.copyfileobj(i, result)
         return [result]

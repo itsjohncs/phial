@@ -5,7 +5,7 @@ import phial.utils
 
 class TestPipeline:
     def test_concat(self):
-        files = [phial.utils.TemporaryFile("a"), phial.utils.TemporaryFile("b")]
+        files = [phial.documents.file("a"), phial.documents.file("b")]
         for i, f in enumerate(files):
             f.write(str(i))
 
@@ -17,7 +17,7 @@ class TestPipeline:
         assert source.contents[0].name == "joined"
 
     def test_exec(self):
-        files = [phial.utils.TemporaryFile("a"), phial.utils.TemporaryFile("b")]
+        files = [phial.documents.file("a"), phial.documents.file("b")]
         for i, f in enumerate(files):
             f.write(str(i))
 
@@ -29,7 +29,7 @@ class TestPipeline:
         assert source.contents[0].name == "joined"
 
     def test_interface(self):
-        files = [phial.utils.TemporaryFile("a"), phial.utils.TemporaryFile("b")]
+        files = [phial.documents.file("a"), phial.documents.file("b")]
         for i, f in enumerate(files):
             f.write(str(i))
 
