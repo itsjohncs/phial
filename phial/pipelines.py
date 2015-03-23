@@ -15,21 +15,22 @@ log = phial.loggers.get_logger(__name__)
 
 
 @utils.public
-def pipeline(foreach=[], binary_mode=True, task_queue=tasks.global_queue):
+def pipeline(foreach=[], binary_mode=True, task_queue=tasks.global_queue, depends_on=None):
     def real_decorator(function):
-        task_queue.enqueue(PipelineTask(function, foreach, binary_mode, function))
+        task_queue.enqueue(PipelineTask(function, foreach, binary_mode, function, depends_on))
         return function
 
     return real_decorator
 
 
 class PipelineTask(tasks.Task):
-    def __init__(self, function, foreach, binary_mode, id):
+    def __init__(self, function, foreach, binary_mode, id, depends_on=None):
         self.function = function
         self.foreach = foreach
         self.binary_mode = binary_mode
         self.id = id
         self.files = None
+        self.depends_on = depends_on
 
     def run(self, config):
         if self.binary_mode:

@@ -9,7 +9,7 @@ log = phial.loggers.get_logger(__name__)
 
 
 @utils.public
-def page(foreach=[], task_queue=tasks.global_queue):
+def page(foreach=[], task_queue=tasks.global_queue, depends_on=None):
     # We allow users to write @page without the (). This permits that.
     foreach_is_func = hasattr(foreach, "__call__")
 
@@ -30,7 +30,8 @@ def page(foreach=[], task_queue=tasks.global_queue):
         if foreach_is_func:
             apparent_foreach = []
 
-        task = pipelines.PipelineTask(page_to_pipeline_adapter, apparent_foreach, False, function)
+        task = pipelines.PipelineTask(page_to_pipeline_adapter, apparent_foreach, False, function,
+                                      depends_on)
         task_queue.enqueue(task)
         return function
 

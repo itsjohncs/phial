@@ -23,7 +23,7 @@ def bio_page(source_file):
         content=output)
 
 
-@phial.page
+@phial.page(depends_on=bio_page)
 def main_page():
     bio_task = phial.get_task(bio_page)
     cat_links = [i.metadata for i in bio_task.files]
