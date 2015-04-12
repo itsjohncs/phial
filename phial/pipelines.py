@@ -66,6 +66,9 @@ class PipelineTask(tasks.Task):
 
 class PipelineSource(object):
     def prepare_contents(self):
+        # We always prune out None values as if they were never there
+        self.contents = [i for i in self.contents if i is not None]
+
         for i in self.contents:
             assert hasattr(i, "name"), "{0!r} does not have name attribute.".format(i)
             i.seek(0)
