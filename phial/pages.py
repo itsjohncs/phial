@@ -22,7 +22,7 @@ def page(foreach=[], task_queue=tasks.global_queue, depends_on=None):
                 source.contents = [function()]
                 return source
             else:
-                return source | pipelines.map(function) | pipelines.cout()
+                return source | pipelines.map(function)
 
         # If the user decorated this page with @page instead of @page(...), foreach will be the
         # same as function. In which case we should treat foreach as empty.
