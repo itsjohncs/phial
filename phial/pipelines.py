@@ -141,8 +141,12 @@ class move(object):
 
 @utils.public
 class map(object):
-    def __init__(self, func):
+    def __init__(self, func, counter=False):
         self.func = func
+        self.counter = counter
 
     def __call__(self, contents):
-        return [self.func(i) for i in contents]
+        if self.counter:
+            return [self.func(item, index) for index, item in enumerate(contents)]
+        else:
+            return [self.func(item) for item in contents]

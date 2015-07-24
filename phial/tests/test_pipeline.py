@@ -39,3 +39,34 @@ class TestPipeline:
         assert len(result.contents) == 1
         assert result.contents[0].read() == "".join(str(i) for i in range(len(files)))
         assert result.contents[0].name == "joined"
+
+    def test_map(self):
+        def transform(f):
+            # Seek to the end of the file and add a 1
+            f.seek(0, 2)
+            f.write("1")
+            return f
+
+        files = [phial.documents.file("a", content="a"), phial.documents.file("b", content="b")]
+        result = phial.pipelines.PipelineSource(files) | phial.pipelines.map(transform)
+
+        assert len(result.contents) == 2
+        assert result.contents[0].read() == "a1"
+        assert result.contents[1].read() == "b1"
+
+    def test_map_counter(self):
+        expected_contents = ["a", "b"]
+        counter = {"_scope_hack": 0}
+
+        def transform(f, index):
+            assert index == counter["_scope_hack"]
+            counter["_scope_hack"] += 1
+            assert f.read() == expected_contents[index]
+            return f
+
+        files = [
+            phial.documents.file("a", content=expected_contents[0]),
+            phial.documents.file("b", content=expected_contents[1])
+        ]
+        phial.pipelines.PipelineSource(files) | phial.pipelines.map(transform, counter=True)
+        assert counter["_scope_hack"] == 2
